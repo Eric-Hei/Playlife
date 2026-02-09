@@ -18,6 +18,9 @@ CREATE TABLE IF NOT EXISTS public.missions (
   start_date DATE,
   end_date DATE,
   image_url TEXT,
+  mission_type TEXT,
+  country TEXT,
+  city TEXT,
   status TEXT DEFAULT 'active',
   created_at TIMESTAMPTZ DEFAULT NOW(),
   created_by UUID REFERENCES public.profiles(id)

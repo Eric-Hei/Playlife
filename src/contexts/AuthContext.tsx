@@ -11,6 +11,7 @@ interface AuthContextType {
     profile: Profile | null;
     loading: boolean;
     signOut: () => Promise<void>;
+    refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -142,12 +143,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         navigate('/', { replace: true });
     }, [navigate]);
 
+    const refreshProfile = useCallback(async () => {
+        if (user) {
+            await fetchProfile(user.id);
+        }
+    }, [user, fetchProfile]);
+
     const value = useMemo(() => ({
         user,
         profile,
         loading,
-        signOut
-    }), [user, profile, loading, signOut]);
+        signOut,
+        refreshProfile
+    }), [user, profile, loading, signOut, refreshProfile]);
 
     return (
         <AuthContext.Provider value={value}>

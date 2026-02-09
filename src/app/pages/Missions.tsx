@@ -127,17 +127,15 @@ export default function Missions() {
                                 <p className="text-gray-500 text-sm line-clamp-3 mb-6 flex-1">{mission.description}</p>
 
                                 <div className="space-y-3 pt-4 border-t border-gray-50">
-                                    <div className="flex items-center gap-3 text-sm text-gray-600 font-medium">
-                                        <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center">
-                                            <MapPin className="w-4 h-4 text-[#e6244d]" />
-                                        </div>
-                                        {mission.location}
+                                    <div className="flex items-center gap-2 text-sm text-gray-500 font-medium">
+                                        <MapPin className="w-4 h-4 text-[#e6244d]" />
+                                        <span>{mission.city && mission.country ? `${mission.city}, ${mission.country}` : mission.location}</span>
                                     </div>
                                     <div className="flex items-center gap-3 text-sm text-gray-600 font-medium">
                                         <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center">
                                             <Calendar className="w-4 h-4 text-[#e6244d]" />
                                         </div>
-                                        {mission.start_date ? new Date(mission.start_date).toLocaleDateString() : 'Bientôt'}
+                                        Du {mission.start_date ? new Date(mission.start_date).toLocaleDateString() : '?'} au {mission.end_date ? new Date(mission.end_date).toLocaleDateString() : '?'}
                                     </div>
                                 </div>
                             </div>

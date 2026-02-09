@@ -13,6 +13,7 @@ export interface Database {
                 Row: {
                     id: string
                     full_name: string | null
+                    email: string | null
                     avatar_url: string | null
                     role: string | null
                     created_at: string
@@ -21,6 +22,7 @@ export interface Database {
                 Insert: {
                     id: string
                     full_name?: string | null
+                    email?: string | null
                     avatar_url?: string | null
                     role?: string | null
                     created_at?: string
@@ -29,6 +31,7 @@ export interface Database {
                 Update: {
                     id?: string
                     full_name?: string | null
+                    email?: string | null
                     avatar_url?: string | null
                     role?: string | null
                     created_at?: string
@@ -44,6 +47,9 @@ export interface Database {
                     start_date: string | null
                     end_date: string | null
                     image_url: string | null
+                    mission_type: string | null
+                    country: string | null
+                    city: string | null
                     status: string | null
                     created_at: string
                     created_by: string | null
@@ -56,6 +62,9 @@ export interface Database {
                     start_date?: string | null
                     end_date?: string | null
                     image_url?: string | null
+                    mission_type?: string | null
+                    country?: string | null
+                    city?: string | null
                     status?: string | null
                     created_at?: string
                     created_by?: string | null
@@ -68,6 +77,9 @@ export interface Database {
                     start_date?: string | null
                     end_date?: string | null
                     image_url?: string | null
+                    mission_type?: string | null
+                    country?: string | null
+                    city?: string | null
                     status?: string | null
                     created_at?: string
                     created_by?: string | null
