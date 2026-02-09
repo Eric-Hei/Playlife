@@ -8,6 +8,7 @@ import Structures from './pages/Structures';
 import Dashboard from './pages/Dashboard';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import Ressources from './pages/Ressources';
 import { AuthProvider } from '@/contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 
@@ -31,6 +32,7 @@ function AppContent() {
             <Route path="/" element={<Home />} />
             <Route path="/missions" element={<Missions />} />
             <Route path="/structures" element={<Structures />} />
+            <Route path="/ressources" element={<Ressources />} />
             <Route element={<ProtectedRoute />}>
               <Route path="/dashboard" element={<Dashboard />} />
             </Route>

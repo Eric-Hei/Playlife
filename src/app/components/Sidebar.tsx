@@ -1,4 +1,4 @@
-import { Home, Users, Globe, Heart, FileText, Settings, Mail, ChevronLeft, ChevronRight, Menu, X, LogIn, LogOut, User } from 'lucide-react';
+import { Home, Users, Globe, Heart, BookOpen, FileText, Settings, Mail, ChevronLeft, ChevronRight, Menu, X, LogIn, LogOut, User } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import logoFull from '@/assets/cfe6c33572ca278d588cf9370b7336e09b78c7ec.png';
@@ -20,7 +20,7 @@ export function Sidebar({ collapsed, onToggle, mobileOpen, onMobileToggle }: Sid
     { icon: Globe, label: 'Missions', path: '/missions' },
     { icon: Users, label: 'Structures', path: '/structures' },
     { icon: Heart, label: 'Impact', path: '/impact' },
-    { icon: FileText, label: 'Ressources', path: '/ressources' },
+    { icon: BookOpen, label: 'Ressources', path: '/ressources' },
   ];
 
   // Add dashboard for logged-in users
@@ -30,7 +30,7 @@ export function Sidebar({ collapsed, onToggle, mobileOpen, onMobileToggle }: Sid
     { icon: Globe, label: 'Missions', path: '/missions' },
     { icon: Users, label: 'Structures', path: '/structures' },
     { icon: Heart, label: 'Impact', path: '/impact' },
-    { icon: FileText, label: 'Ressources', path: '/ressources' },
+    { icon: BookOpen, label: 'Ressources', path: '/ressources' },
   ] : menuItems;
 
   return (
