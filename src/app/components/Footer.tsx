@@ -1,4 +1,4 @@
-import logo from 'figma:asset/607d96d5ec1407ca9d7c48136af0000f79b8c292.png';
+import logo from '@/assets/607d96d5ec1407ca9d7c48136af0000f79b8c292.png';
 
 export function Footer() {
   return (
@@ -8,7 +8,7 @@ export function Footer() {
           <div className="flex items-center gap-3">
             <img src={logo} alt="Playlife" className="h-8 opacity-60" />
           </div>
-          
+
           <div className="flex flex-wrap items-center gap-8 text-sm text-gray-500">
             <a href="#" className="hover:text-[#e6244d] transition-colors">
               Mentions légales

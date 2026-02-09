@@ -1,6 +1,6 @@
 import { Home, Users, Globe, Heart, FileText, Settings, Mail, ChevronLeft, ChevronRight, Menu, X } from 'lucide-react';
-import logoFull from 'figma:asset/cfe6c33572ca278d588cf9370b7336e09b78c7ec.png';
-import logoIcon from 'figma:asset/6ed5cc4ee5dcab2b9e20f6f579b50f5e14023d6a.png';
+import logoFull from '@/assets/cfe6c33572ca278d588cf9370b7336e09b78c7ec.png';
+import logoIcon from '@/assets/6ed5cc4ee5dcab2b9e20f6f579b50f5e14023d6a.png';
 
 interface SidebarProps {
   collapsed: boolean;

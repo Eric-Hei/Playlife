@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import useEmblaCarousel from 'embla-carousel-react';
-import photo1 from 'figma:asset/155fcbd7be132c2355179c87c4dd31f67e34d530.png';
-import photo2 from 'figma:asset/b12612cf6d353a44814598f63a16fca6983f6eb8.png';
+import photo1 from '@/assets/155fcbd7be132c2355179c87c4dd31f67e34d530.png';
+import photo2 from '@/assets/b12612cf6d353a44814598f63a16fca6983f6eb8.png';
 
 export function Hero() {
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true });
@@ -14,10 +14,10 @@ export function Hero() {
 
   useEffect(() => {
     if (!emblaApi) return;
-    
+
     onSelect();
     emblaApi.on('select', onSelect);
-    
+
     // Auto-play
     const interval = setInterval(() => {
       emblaApi.scrollNext();
@@ -41,8 +41,8 @@ export function Hero() {
               <div className="flex">
                 {photos.map((photo, index) => (
                   <div key={index} className="flex-[0_0_100%] min-w-0">
-                    <img 
-                      src={photo} 
+                    <img
+                      src={photo}
                       alt={`PlayLife mission ${index + 1}`}
                       className="w-full h-[500px] object-cover"
                     />
@@ -55,9 +55,8 @@ export function Hero() {
               {photos.map((_, index) => (
                 <button
                   key={index}
-                  className={`w-2 h-2 rounded-full transition-all ${
-                    index === selectedIndex ? 'bg-[#e6244d] w-6' : 'bg-gray-300'
-                  }`}
+                  className={`w-2 h-2 rounded-full transition-all ${index === selectedIndex ? 'bg-[#e6244d] w-6' : 'bg-gray-300'
+                    }`}
                   onClick={() => emblaApi?.scrollTo(index)}
                   aria-label={`Go to slide ${index + 1}`}
                 />
@@ -73,7 +72,7 @@ export function Hero() {
             <p className="text-gray-600 mb-10 text-lg">
               Deux façons d'aider les enfants grâce au sport, partout dans le monde.
             </p>
-            
+
             <div className="flex flex-col gap-4">
               <button className="px-8 py-3.5 bg-[#e6244d] text-white rounded-full hover:bg-[#d11d42] transition-colors shadow-md">
                 Créer une mission
