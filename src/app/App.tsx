@@ -1,33 +1,55 @@
 import { useState } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
 import Home from './pages/Home';
 import Missions from './pages/Missions';
 import Structures from './pages/Structures';
+import Dashboard from './pages/Dashboard';
+import Login from './pages/Login';
+import Register from './pages/Register';
+import { AuthProvider } from '@/contexts/AuthContext';
+import ProtectedRoute from './components/ProtectedRoute';
 
-export default function App() {
+function AppContent() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <Router>
-      <div className="min-h-screen bg-gray-50">
-        <Sidebar
-          collapsed={sidebarCollapsed}
-          onToggle={setSidebarCollapsed}
-          mobileOpen={mobileMenuOpen}
-          onMobileToggle={setMobileMenuOpen}
-        />
-        <div className={`transition-all duration-300 ${sidebarCollapsed ? 'lg:ml-22' : 'lg:ml-64'}`}>
-          <Header />
+    <div className="min-h-screen bg-gray-50 flex">
+      <Sidebar
+        collapsed={sidebarCollapsed}
+        onToggle={setSidebarCollapsed}
+        mobileOpen={mobileMenuOpen}
+        onMobileToggle={setMobileMenuOpen}
+      />
+      <div className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ${sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
+        }`}>
+        <Header />
+        <main className="flex-1 p-4 md:p-8">
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/missions" element={<Missions />} />
             <Route path="/structures" element={<Structures />} />
+            <Route element={<ProtectedRoute />}>
+              <Route path="/dashboard" element={<Dashboard />} />
+            </Route>
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
-        </div>
+        </main>
       </div>
+    </div>
+  );
+}
+
+export default function App() {
+  return (
+    <Router>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
     </Router>
   );
 }

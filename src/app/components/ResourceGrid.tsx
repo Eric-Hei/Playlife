@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import useEmblaCarousel from 'embla-carousel-react';
 import { Calendar, Users, Package, ArrowRight, Send, CheckCircle, Target, DollarSign } from 'lucide-react';
 import photo1 from '@/assets/f399f68985e7900257d342fc0c1a4ab4f702eefe.png';
@@ -124,9 +125,12 @@ export function ResourceGrid() {
                 <Package className="w-10 h-10 md:w-12 md:h-12 text-[#e6244d]" />
               </div>
 
-              <button className="w-full mt-4 md:mt-6 px-6 py-2.5 md:py-3 bg-[#e6244d] text-white rounded-lg hover:bg-[#d11d42] transition-colors text-sm font-medium">
+              <Link
+                to="/missions"
+                className="w-full mt-4 md:mt-6 px-6 py-2.5 md:py-3 bg-[#e6244d] text-white rounded-lg hover:bg-[#d11d42] transition-colors text-sm font-medium text-center block"
+              >
                 Créer une mission
-              </button>
+              </Link>
             </div>
 
             {/* Card - Animateurs */}
@@ -157,9 +161,12 @@ export function ResourceGrid() {
                 <Users className="w-10 h-10 md:w-12 md:h-12 text-[#22081c]" />
               </div>
 
-              <button className="w-full mt-4 md:mt-6 px-6 py-2.5 md:py-3 bg-[#22081c] text-white rounded-lg hover:bg-[#1a0616] transition-colors text-sm font-medium">
+              <Link
+                to="/missions"
+                className="w-full mt-4 md:mt-6 px-6 py-2.5 md:py-3 bg-[#22081c] text-white rounded-lg hover:bg-[#1a0616] transition-colors text-sm font-medium text-center block"
+              >
                 Créer une mission
-              </button>
+              </Link>
             </div>
           </div>
 
@@ -262,9 +269,12 @@ export function ResourceGrid() {
               </div>
 
               <div className="mt-8 md:mt-12 bg-white/10 rounded-xl p-4 md:p-6">
-                <button className="w-full px-6 py-2.5 md:py-3 bg-[#e6244d] text-white rounded-lg hover:bg-[#d11d42] transition-colors text-sm font-medium">
+                <Link
+                  to="/missions"
+                  className="w-full px-6 py-2.5 md:py-3 bg-[#e6244d] text-white rounded-lg hover:bg-[#d11d42] transition-colors text-sm font-medium text-center block"
+                >
                   Créer une mission
-                </button>
+                </Link>
               </div>
             </div>
           </div>
