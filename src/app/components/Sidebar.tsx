@@ -19,7 +19,7 @@ export function Sidebar({ collapsed, onToggle, mobileOpen, onMobileToggle }: Sid
     { icon: Home, label: 'Accueil', path: '/' },
     { icon: Globe, label: 'Missions', path: '/missions' },
     { icon: Users, label: 'Structures', path: '/structures' },
-    { icon: Heart, label: 'Impact', path: '/impact' },
+    { icon: Heart, label: 'Parcours Playlife', path: '/impact' },
     { icon: BookOpen, label: 'Ressources', path: '/ressources' },
   ];
 
@@ -29,9 +29,14 @@ export function Sidebar({ collapsed, onToggle, mobileOpen, onMobileToggle }: Sid
     { icon: FileText, label: 'Mon Tableau de Bord', path: '/dashboard' },
     { icon: Globe, label: 'Missions', path: '/missions' },
     { icon: Users, label: 'Structures', path: '/structures' },
-    { icon: Heart, label: 'Impact', path: '/impact' },
+    { icon: Heart, label: 'Parcours Playlife', path: '/impact' },
     { icon: BookOpen, label: 'Ressources', path: '/ressources' },
   ] : menuItems;
+
+  // Add settings for super admins
+  const finalMenuItems = profile?.is_super_admin
+    ? [...userMenuItems, { icon: Settings, label: 'Paramètres', path: '/settings' }]
+    : userMenuItems;
 
   return (
     <>
@@ -81,7 +86,7 @@ export function Sidebar({ collapsed, onToggle, mobileOpen, onMobileToggle }: Sid
 
         <nav className="flex-1 p-4">
           <ul className="space-y-1">
-            {userMenuItems.map((item, index) => {
+            {finalMenuItems.map((item, index) => {
               const isActive = location.pathname === item.path;
               return (
                 <li key={index}>
@@ -129,16 +134,6 @@ export function Sidebar({ collapsed, onToggle, mobileOpen, onMobileToggle }: Sid
           >
             <Mail className="w-5 h-5 flex-shrink-0" />
             {!collapsed && <span className="text-sm font-medium">Contact</span>}
-          </Link>
-          <Link
-            to="/settings"
-            onClick={() => onMobileToggle(false)}
-            className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${location.pathname === '/settings' ? 'bg-[#e6244d] text-white' : 'text-gray-700 hover:bg-gray-50'
-              }`}
-            title={collapsed ? 'Paramètres' : undefined}
-          >
-            <Settings className="w-5 h-5 flex-shrink-0" />
-            {!collapsed && <span className="text-sm font-medium">Paramètres</span>}
           </Link>
           {user ? (
             <button

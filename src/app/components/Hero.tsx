@@ -43,7 +43,7 @@ export function Hero() {
                   <div key={index} className="flex-[0_0_100%] min-w-0">
                     <img
                       src={photo}
-                      alt={`PlayLife mission ${index + 1}`}
+                      alt={`Playlife mission ${index + 1}`}
                       className="w-full h-[500px] object-cover"
                     />
                   </div>
@@ -67,7 +67,7 @@ export function Hero() {
           {/* Right side - Text content */}
           <div>
             <h2 className="text-[#22081c] mb-6">
-              Organiser une mission PlayLife simplement
+              Organiser une mission Playlife simplement
             </h2>
             <p className="text-gray-600 mb-10 text-lg">
               Deux façons d'aider les enfants grâce au sport, partout dans le monde.

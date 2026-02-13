@@ -16,6 +16,8 @@ export interface Database {
                     email: string | null
                     avatar_url: string | null
                     role: string | null
+                    user_type: string | null
+                    is_super_admin: boolean | null
                     created_at: string
                     updated_at: string
                 }
@@ -25,6 +27,8 @@ export interface Database {
                     email?: string | null
                     avatar_url?: string | null
                     role?: string | null
+                    user_type?: string | null
+                    is_super_admin?: boolean | null
                     created_at?: string
                     updated_at?: string
                 }
@@ -34,6 +38,8 @@ export interface Database {
                     email?: string | null
                     avatar_url?: string | null
                     role?: string | null
+                    user_type?: string | null
+                    is_super_admin?: boolean | null
                     created_at?: string
                     updated_at?: string
                 }
@@ -51,6 +57,7 @@ export interface Database {
                     country: string | null
                     city: string | null
                     status: string | null
+                    fundraising_url: string | null
                     created_at: string
                     created_by: string | null
                 }
@@ -66,6 +73,7 @@ export interface Database {
                     country?: string | null
                     city?: string | null
                     status?: string | null
+                    fundraising_url?: string | null
                     created_at?: string
                     created_by?: string | null
                 }
@@ -78,9 +86,39 @@ export interface Database {
                     end_date?: string | null
                     image_url?: string | null
                     mission_type?: string | null
+                    fundraising_url?: string | null
                     country?: string | null
                     city?: string | null
                     status?: string | null
+                    created_at?: string
+                    created_by?: string | null
+                }
+            }
+            mission_media: {
+                Row: {
+                    id: string
+                    mission_id: string
+                    media_url: string
+                    media_type: string
+                    caption: string | null
+                    created_at: string
+                    created_by: string | null
+                }
+                Insert: {
+                    id?: string
+                    mission_id: string
+                    media_url: string
+                    media_type: string
+                    caption?: string | null
+                    created_at?: string
+                    created_by?: string | null
+                }
+                Update: {
+                    id?: string
+                    mission_id?: string
+                    media_url?: string
+                    media_type?: string
+                    caption?: string | null
                     created_at?: string
                     created_by?: string | null
                 }
@@ -94,10 +132,14 @@ export interface Database {
                     address: string | null
                     city: string | null
                     country: string | null
+                    contact_name: string | null
                     contact_email: string | null
                     contact_phone: string | null
                     website_url: string | null
                     image_url: string | null
+                    status: string | null
+                    origin_info: string | null
+                    created_by: string | null
                     created_at: string
                 }
                 Insert: {
@@ -108,10 +150,14 @@ export interface Database {
                     address?: string | null
                     city?: string | null
                     country?: string | null
+                    contact_name?: string | null
                     contact_email?: string | null
                     contact_phone?: string | null
                     website_url?: string | null
                     image_url?: string | null
+                    status?: string | null
+                    origin_info?: string | null
+                    created_by?: string | null
                     created_at?: string
                 }
                 Update: {
@@ -122,10 +168,14 @@ export interface Database {
                     address?: string | null
                     city?: string | null
                     country?: string | null
+                    contact_name?: string | null
                     contact_email?: string | null
                     contact_phone?: string | null
                     website_url?: string | null
                     image_url?: string | null
+                    status?: string | null
+                    origin_info?: string | null
+                    created_by?: string | null
                     created_at?: string
                 }
             }

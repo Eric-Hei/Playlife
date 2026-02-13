@@ -30,7 +30,7 @@ const categories = [
     },
     {
         title: "Documents Utiles",
-        description: "Téléchargez les documents officiels PlayLife pour vos démarches.",
+        description: "Téléchargez les documents officiels Playlife pour vos démarches.",
         icon: <FileText className="w-6 h-6" />,
         color: "bg-orange-50 text-orange-600",
         docs: [
@@ -115,19 +115,7 @@ export default function Ressources() {
                 ))}
             </div>
 
-            {/* Support CTA */}
-            <div className="bg-gradient-to-br from-[#e6244d] to-[#ff4d71] rounded-[2.5rem] p-10 flex flex-col md:flex-row items-center justify-between gap-8 text-white shadow-xl shadow-[#e6244d]/20 overflow-hidden relative">
-                <div className="absolute -left-10 -bottom-10 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
-                <div className="relative z-10">
-                    <h3 className="text-3xl font-black mb-3">Besoin d'un accompagnement sur mesure ?</h3>
-                    <p className="text-white/80 font-medium text-lg max-w-xl leading-relaxed">
-                        Notre équipe est disponible pour vous aider à organiser votre mission et valider votre pack matériel.
-                    </p>
-                </div>
-                <button className="relative z-10 px-8 py-4 bg-white text-[#e6244d] rounded-2xl font-black hover:bg-gray-50 transition-all hover:scale-105 active:scale-95 shadow-lg">
-                    Contacter PlayLife
-                </button>
-            </div>
+
 
             {/* Quick Tips */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -141,7 +129,7 @@ export default function Ressources() {
                 </div>
                 <div className="flex items-center gap-4 p-6 bg-pink-50 rounded-3xl border border-pink-100">
                     <Heart className="w-8 h-8 text-pink-600" />
-                    <p className="text-sm font-bold text-pink-800">Impact social certifié par PlayLife</p>
+                    <p className="text-sm font-bold text-pink-800">Impact social certifié par Playlife</p>
                 </div>
             </div>
         </div>

@@ -1,10 +1,11 @@
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useState } from 'react';
 import { UserPlus, Mail, Lock, User, Loader2, Globe } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
 export default function Register() {
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
         email: '',
@@ -43,7 +44,8 @@ export default function Register() {
                 if (profileError) throw profileError;
             }
 
-            navigate('/missions');
+            const createParam = searchParams.get('create');
+            navigate(createParam === 'true' ? '/missions?create=true' : '/missions');
         } catch (error: any) {
             setError(error.message);
             setLoading(false);
@@ -57,7 +59,7 @@ export default function Register() {
                     <div className="inline-flex items-center justify-center w-16 h-16 bg-[#e6244d] rounded-2xl mb-4 shadow-lg shadow-[#e6244d]/20">
                         <UserPlus className="w-8 h-8 text-white" />
                     </div>
-                    <h1 className="text-2xl font-bold text-[#22081c]">Rejoignez PlayLife</h1>
+                    <h1 className="text-2xl font-bold text-[#22081c]">Rejoignez Playlife</h1>
                     <p className="text-gray-500 mt-2">Commencez votre aventure solidaire</p>
                 </div>
 

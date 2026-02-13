@@ -1,12 +1,12 @@
-# MVP PlayLife — plateforme web pour missions solidaires
+# MVP Playlife — plateforme web pour missions solidaires
 
 ## 🎯 Contexte
-PlayLife est une association qui envoie des packs de matériel sportif à des enfants via des structures locales et des voyageurs solidaires.  
+Playlife est une association qui envoie des packs de matériel sportif à des enfants via des structures locales et des voyageurs solidaires.  
 Le MVP doit permettre à deux types d’acteurs de créer, suivre et partager des missions.  
 Objectif : plateforme fluide, claire, automatisée au minimum, responsive, et intuitive.
 
 Deux profils utilisateurs (Table `profiles`) :
-1. **Voyageur solidaire** : profite d’un voyage pro ou perso pour remettre un pack PlayLife à une structure locale.
+1. **Voyageur solidaire** : profite d’un voyage pro ou perso pour remettre un pack Playlife à une structure locale.
 2. **Animateur / Instituteur** : encadre des enfants et leur fait créer un pack destiné à d’autres enfants (anciennement "Créateur de mission").
 
 ---
@@ -73,7 +73,7 @@ Deux profils utilisateurs (Table `profiles`) :
 - [x] Connexion Supabase & Client Utility
 - [x] Schéma de base de données (SQL)
 - [x] Page Missions dynamique + Formulaire de création
-- [x] Intégration de la charte graphique (Rose/Rouge PlayLife)
+- [x] Intégration de la charte graphique (Rose/Rouge Playlife)
 - [ ] Authentification sécurisée (Email/MDP)
 - [ ] Tableau de bord utilisateur complet (Cartes de progression)
 - [ ] Formulaire de création en 4 étapes (actuellement simple modal)

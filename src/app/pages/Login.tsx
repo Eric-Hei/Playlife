@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Mail, Lock, LogIn, Loader2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -6,6 +6,8 @@ import { supabase } from '@/lib/supabase';
 
 export default function Login() {
     const navigate = useNavigate();
+    const location = useLocation();
+    const [searchParams] = useSearchParams();
     const { user, loading: authLoading } = useAuth();
     const [loading, setLoading] = useState(false);
     const [email, setEmail] = useState('');
@@ -16,9 +18,10 @@ export default function Login() {
     useEffect(() => {
         if (!authLoading && user) {
             console.log('[Login] User found, redirecting to missions...');
-            navigate('/missions');
+            const createParam = searchParams.get('create');
+            navigate(createParam === 'true' ? '/missions?create=true' : '/missions');
         }
-    }, [authLoading, user, navigate]);
+    }, [authLoading, user, navigate, searchParams]);
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -36,7 +39,8 @@ export default function Login() {
                 setLoading(false);
             } else {
                 console.log('[Login] Login successful, redirecting...');
-                navigate('/missions');
+                const createParam = searchParams.get('create');
+                navigate(createParam === 'true' ? '/missions?create=true' : '/missions');
             }
         } catch (err: any) {
             setError(err.message || 'Erreur de connexion');
@@ -63,7 +67,7 @@ export default function Login() {
                         <LogIn className="w-8 h-8 text-white" />
                     </div>
                     <h1 className="text-2xl font-bold text-[#22081c]">Heureux de vous revoir</h1>
-                    <p className="text-gray-500 mt-2">Connectez-vous à votre espace PlayLife</p>
+                    <p className="text-gray-500 mt-2">Connectez-vous à votre espace Playlife</p>
                 </div>
 
                 {error && (

@@ -1,13 +1,16 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import useEmblaCarousel from 'embla-carousel-react';
-import { Calendar, Users, Package, ArrowRight, Send, CheckCircle, Target, DollarSign } from 'lucide-react';
+import { Calendar, Users, ArrowRight, Send, CheckCircle, Target, DollarSign, Plane, GraduationCap, Package } from 'lucide-react';
 import photo1 from '@/assets/f399f68985e7900257d342fc0c1a4ab4f702eefe.png';
 import photo2 from '@/assets/4e531e27501e1b1580ce8c44771efd6b2cf317e3.png';
 import photo3 from '@/assets/91b18a520ccc545782d867796a103855745c2162.png';
 import { AuthCard } from './AuthCard';
+import { useAuth } from '@/contexts/AuthContext';
 
 export function ResourceGrid() {
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true });
   const [selectedIndex, setSelectedIndex] = useState(0);
 
@@ -122,21 +125,21 @@ export function ResourceGrid() {
               </ul>
 
               <div className="bg-pink-50 rounded-xl p-6 flex items-center justify-center h-20 md:h-24">
-                <Package className="w-10 h-10 md:w-12 md:h-12 text-[#e6244d]" />
+                <Plane className="w-10 h-10 md:w-12 md:h-12 text-[#e6244d]" />
               </div>
 
-              <Link
-                to="/missions"
-                className="w-full mt-4 md:mt-6 px-6 py-2.5 md:py-3 bg-[#e6244d] text-white rounded-lg hover:bg-[#d11d42] transition-colors text-sm font-medium text-center block"
+              <button
+                onClick={() => user ? navigate('/missions') : navigate('/login?create=true')}
+                className="w-full mt-4 md:mt-6 px-6 py-2.5 md:py-3 bg-[#e6244d] text-white rounded-lg hover:bg-[#d11d42] transition-colors text-sm font-medium text-center"
               >
                 Créer une mission
-              </Link>
+              </button>
             </div>
 
             {/* Card - Animateurs */}
             <div className="bg-white rounded-2xl p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow border border-gray-100">
               <div className="flex items-start justify-between mb-4 md:mb-6">
-                <h3 className="text-lg md:text-xl font-semibold text-[#22081c]">Animateurs / Instituteurs</h3>
+                <h3 className="text-lg md:text-xl font-semibold text-[#22081c]">Animateurs / Enseignants</h3>
                 <ArrowRight className="w-5 h-5 text-gray-400 flex-shrink-0" />
               </div>
 
@@ -158,15 +161,15 @@ export function ResourceGrid() {
               </ul>
 
               <div className="bg-gray-100 rounded-xl p-6 flex items-center justify-center h-20 md:h-24">
-                <Users className="w-10 h-10 md:w-12 md:h-12 text-[#22081c]" />
+                <GraduationCap className="w-10 h-10 md:w-12 md:h-12 text-[#22081c]" />
               </div>
 
-              <Link
-                to="/missions"
-                className="w-full mt-4 md:mt-6 px-6 py-2.5 md:py-3 bg-[#22081c] text-white rounded-lg hover:bg-[#1a0616] transition-colors text-sm font-medium text-center block"
+              <button
+                onClick={() => user ? navigate('/missions') : navigate('/login?create=true')}
+                className="w-full mt-4 md:mt-6 px-6 py-2.5 md:py-3 bg-[#22081c] text-white rounded-lg hover:bg-[#1a0616] transition-colors text-sm font-medium text-center"
               >
                 Créer une mission
-              </Link>
+              </button>
             </div>
           </div>
 
@@ -230,10 +233,10 @@ export function ResourceGrid() {
             </div>
 
             <div className="mt-6 md:mt-8 pt-6 border-t border-gray-100">
-              <button className="text-[#e6244d] hover:text-[#d11d42] transition-colors text-sm font-medium inline-flex items-center gap-2">
+              <Link to="/impact" className="text-[#e6244d] hover:text-[#d11d42] transition-colors text-sm font-medium inline-flex items-center gap-2">
                 En savoir plus sur le processus
                 <ArrowRight className="w-4 h-4" />
-              </button>
+              </Link>
             </div>
           </div>
 
@@ -273,7 +276,7 @@ export function ResourceGrid() {
                   to="/missions"
                   className="w-full px-6 py-2.5 md:py-3 bg-[#e6244d] text-white rounded-lg hover:bg-[#d11d42] transition-colors text-sm font-medium text-center block"
                 >
-                  Créer une mission
+                  Voir les missions
                 </Link>
               </div>
             </div>

@@ -1,34 +1,47 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Database } from '@/types/database.types';
+import { StructureForm } from '@/app/components/StructureForm';
+import { Plus } from 'lucide-react';
 
 type Structure = Database['public']['Tables']['structures']['Row'];
 
 export default function Structures() {
     const [structures, setStructures] = useState<Structure[]>([]);
     const [loading, setLoading] = useState(true);
+    const [isFormOpen, setIsFormOpen] = useState(false);
 
     useEffect(() => {
-        async function fetchStructures() {
-            const { data, error } = await supabase
-                .from('structures')
-                .select('*')
-                .order('name');
-
-            if (error) {
-                console.error('Error fetching structures:', error);
-            } else {
-                setStructures(data || []);
-            }
-            setLoading(false);
-        }
-
         fetchStructures();
     }, []);
 
+    async function fetchStructures() {
+        const { data, error } = await supabase
+            .from('structures')
+            .select('*')
+            .eq('status', 'validée')
+            .order('name');
+
+        if (error) {
+            console.error('Error fetching structures:', error);
+        } else {
+            setStructures(data || []);
+        }
+        setLoading(false);
+    }
+
     return (
         <main className="p-8">
-            <h1 className="text-3xl font-bold text-[#22081c] mb-6">Structures Partenaires</h1>
+            <div className="flex items-center justify-between mb-6">
+                <h1 className="text-3xl font-bold text-[#22081c]">Structures Partenaires</h1>
+                <button
+                    onClick={() => setIsFormOpen(true)}
+                    className="flex items-center gap-2 bg-[#e6244d] text-white px-6 py-3 rounded-xl font-medium hover:bg-[#c91d41] transition-colors"
+                >
+                    <Plus className="w-5 h-5" />
+                    Proposer une structure
+                </button>
+            </div>
 
             {loading ? (
                 <div className="flex justify-center p-12">
@@ -70,6 +83,14 @@ export default function Structures() {
                     <p className="text-gray-600 mb-4">Aucune structure partenaire n'a été trouvée.</p>
                     <p className="text-sm text-gray-400">Ajoutez-les directement depuis votre tableau de bord Supabase.</p>
                 </div>
+            )}
+
+            {/* Modal de formulaire */}
+            {isFormOpen && (
+                <StructureForm
+                    onClose={() => setIsFormOpen(false)}
+                    onSuccess={fetchStructures}
+                />
             )}
         </main>
     );
