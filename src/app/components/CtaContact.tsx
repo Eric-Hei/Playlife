@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 
 export function CtaContact() {
     return (
-        <div className="bg-gradient-to-br from-[#e6244d] to-[#ff4d71] rounded-[2.5rem] p-10 flex flex-col md:flex-row items-center justify-between gap-8 text-white shadow-xl shadow-[#e6244d]/20 overflow-hidden relative my-10">
+        <div className="bg-gradient-to-br from-[#e6244d] to-[#ff4d71] rounded-[2.5rem] p-10 flex flex-col md:flex-row items-center justify-between gap-8 text-white shadow-xl shadow-[#e6244d]/20 overflow-hidden relative mb-10 mx-4 md:mx-8">
             <div className="absolute -left-10 -bottom-10 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
             <div className="relative z-10">
                 <h3 className="text-3xl font-black mb-3">Besoin d'un accompagnement sur mesure ?</h3>

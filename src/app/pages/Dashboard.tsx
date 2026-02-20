@@ -189,7 +189,7 @@ export default function Dashboard() {
     }
 
     return (
-        <div className="space-y-8">
+        <div className="px-4 md:px-8 py-4 md:py-6 border-t border-gray-100 space-y-8">
             {/* Welcome Section */}
             <div className="bg-gradient-to-br from-[#22081c] to-[#3d1232] rounded-3xl p-8 text-white relative overflow-hidden">
                 <div className="absolute inset-0 bg-[url('data:image/svg+xml,...')] opacity-5"></div>

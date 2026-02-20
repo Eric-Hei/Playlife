@@ -53,7 +53,7 @@ export default function Register() {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4 py-12">
+        <div className="min-h-screen flex items-start justify-center bg-gray-50 px-4 md:px-8 py-4 md:py-6 border-t border-gray-100">
             <div className="w-full max-w-md bg-white rounded-3xl shadow-xl p-8 border border-gray-100">
                 <div className="text-center mb-8">
                     <div className="inline-flex items-center justify-center w-16 h-16 bg-[#e6244d] rounded-2xl mb-4 shadow-lg shadow-[#e6244d]/20">

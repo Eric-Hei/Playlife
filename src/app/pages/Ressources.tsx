@@ -43,7 +43,7 @@ const categories = [
 
 export default function Ressources() {
     return (
-        <div className="space-y-10 pb-20 animate-in fade-in duration-700">
+        <div className="px-4 md:px-8 py-4 md:py-6 border-t border-gray-100 space-y-10 pb-20 animate-in fade-in duration-700">
             {/* Hero Section */}
             <div className="relative rounded-[2.5rem] bg-[#22081c] p-10 overflow-hidden text-white shadow-2xl">
                 <div className="absolute top-0 right-0 w-96 h-96 bg-[#e6244d] opacity-10 rounded-full -mr-48 -mt-48 blur-3xl"></div>

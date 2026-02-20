@@ -66,7 +66,7 @@ export default function Missions() {
     }, [searchParams, user, setSearchParams]);
 
     return (
-        <main className="p-4 md:p-8 animate-in fade-in duration-500">
+        <main className="px-4 md:px-8 py-4 md:py-6 border-t border-gray-100 animate-in fade-in duration-500">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
                 <div>
                     <h1 className="text-4xl font-extrabold text-[#22081c] tracking-tight">Missions</h1>

@@ -49,7 +49,8 @@ export function StructureForm({ onClose, onSuccess }: StructureFormProps) {
         origin_info: '',
         description: '',
         type: '',
-        website_url: ''
+        website_url: '',
+        postal_code: ''
     });
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -175,6 +176,20 @@ export function StructureForm({ onClose, onSuccess }: StructureFormProps) {
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                                    Code Postal *
+                                </label>
+                                <input
+                                    type="text"
+                                    name="postal_code"
+                                    required
+                                    value={formData.postal_code}
+                                    onChange={handleChange}
+                                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#e6244d] focus:border-transparent"
+                                    placeholder="Ex: 75001"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1.5">
                                     Pays *
                                 </label>
                                 <select
@@ -197,12 +212,11 @@ export function StructureForm({ onClose, onSuccess }: StructureFormProps) {
                             <div>
                                 <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1.5">
                                     <Phone className="w-4 h-4 text-[#e6244d]" />
-                                    Téléphone *
+                                    Téléphone
                                 </label>
                                 <input
                                     type="tel"
                                     name="contact_phone"
-                                    required
                                     value={formData.contact_phone}
                                     onChange={handleChange}
                                     className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#e6244d] focus:border-transparent"
@@ -230,11 +244,10 @@ export function StructureForm({ onClose, onSuccess }: StructureFormProps) {
                         <div>
                             <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1.5">
                                 <FileText className="w-4 h-4 text-[#e6244d]" />
-                                Comment connaissez-vous cette structure ? *
+                                Comment connaissez-vous cette structure ?
                             </label>
                             <textarea
                                 name="origin_info"
-                                required
                                 value={formData.origin_info}
                                 onChange={handleChange}
                                 rows={3}

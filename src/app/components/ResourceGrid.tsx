@@ -246,9 +246,11 @@ export function ResourceGrid() {
         <div className="lg:col-span-4">
           <div className="lg:sticky lg:top-6 space-y-6">
             {/* Auth Card - Desktop only (mobile at top) */}
-            <div className="hidden lg:block">
-              <AuthCard />
-            </div>
+            {!user && (
+              <div className="hidden lg:block">
+                <AuthCard />
+              </div>
+            )}
 
             {/* Impact Card */}
             <div className="bg-[#22081c] rounded-2xl p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow text-white">

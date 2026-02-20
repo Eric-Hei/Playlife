@@ -31,7 +31,7 @@ export default function Structures() {
     }
 
     return (
-        <main className="p-8">
+        <main className="px-4 md:px-8 py-4 md:py-6 border-t border-gray-100">
             <div className="flex items-center justify-between mb-6">
                 <h1 className="text-3xl font-bold text-[#22081c]">Structures Partenaires</h1>
                 <button
@@ -65,13 +65,33 @@ export default function Structures() {
                                 </div>
                             </div>
                             <p className="text-gray-600 text-sm flex-1 mb-4">{structure.description}</p>
-                            <div className="pt-4 border-t border-gray-50 flex flex-col gap-2">
-                                {structure.city && structure.country && (
-                                    <p className="text-xs text-gray-500">📍 {structure.city}, {structure.country}</p>
-                                )}
+                            <div className="pt-4 border-t border-gray-100 flex flex-col gap-3">
+                                <div className="space-y-1">
+                                    {(structure as any).address && (
+                                        <p className="text-xs text-gray-500">📍 {(structure as any).address}</p>
+                                    )}
+                                    {((structure as any).postal_code || structure.city || structure.country) && (
+                                        <p className="text-xs text-gray-500 ml-4">
+                                            {(structure as any).postal_code} {structure.city}{structure.city && structure.country ? ', ' : ''}{structure.country}
+                                        </p>
+                                    )}
+                                </div>
+
+                                <div className="space-y-1 pt-2">
+                                    {structure.contact_name && (
+                                        <p className="text-xs text-gray-600 font-bold">👤 {structure.contact_name}</p>
+                                    )}
+                                    {structure.contact_email && (
+                                        <p className="text-xs text-gray-500">📧 {structure.contact_email}</p>
+                                    )}
+                                    {(structure as any).contact_phone && (
+                                        <p className="text-xs text-gray-500">📞 {(structure as any).contact_phone}</p>
+                                    )}
+                                </div>
+
                                 {structure.website_url && (
-                                    <a href={structure.website_url} target="_blank" rel="noopener noreferrer" className="text-xs text-[#e6244d] hover:underline font-medium">
-                                        Visiter le site web
+                                    <a href={structure.website_url} target="_blank" rel="noopener noreferrer" className="text-xs text-[#e6244d] hover:underline font-bold mt-1 inline-flex items-center gap-1">
+                                        Visiter le site web →
                                     </a>
                                 )}
                             </div>

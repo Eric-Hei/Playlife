@@ -21,7 +21,7 @@ export default function Settings() {
     // Rediriger si pas super admin
     useEffect(() => {
         if (!profile) return;
-        
+
         if (!profile.is_super_admin) {
             alert('Accès refusé : vous devez être super administrateur.');
             navigate('/');
@@ -104,7 +104,7 @@ export default function Settings() {
     }
 
     return (
-        <main className="p-8">
+        <main className="px-4 md:px-8 py-4 md:py-6 border-t border-gray-100">
             <div className="mb-8">
                 <div className="flex items-center gap-3 mb-2">
                     <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-700 rounded-xl flex items-center justify-center">
@@ -136,13 +136,13 @@ export default function Settings() {
                     <div className="grid grid-cols-1 gap-4">
                         {pendingStructures.map((structure) => (
                             <div key={structure.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                                <div className="flex items-start justify-between gap-4">
+                                <div className="flex flex-col md:flex-row items-start justify-between gap-6">
                                     <div className="flex-1">
-                                        <h3 className="font-bold text-lg text-[#22081c] mb-2">{structure.name}</h3>
-                                        <div className="grid grid-cols-2 gap-3 text-sm">
+                                        <h3 className="font-bold text-lg text-[#22081c] mb-4">{structure.name}</h3>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 text-sm mb-4">
                                             <div>
                                                 <span className="text-gray-500">Contact:</span>
-                                                <span className="ml-2 font-medium">{structure.contact_name}</span>
+                                                <span className="ml-2 font-bold text-[#22081c]">{structure.contact_name}</span>
                                             </div>
                                             <div>
                                                 <span className="text-gray-500">Email:</span>
@@ -154,20 +154,32 @@ export default function Settings() {
                                             </div>
                                             <div>
                                                 <span className="text-gray-500">Localisation:</span>
-                                                <span className="ml-2 font-medium">{structure.city}, {structure.country}</span>
+                                                <span className="ml-2 font-medium">
+                                                    {(structure as any).address && `${(structure as any).address}, `}
+                                                    {(structure as any).postal_code && `${(structure as any).postal_code} `}
+                                                    {structure.city}, {structure.country}
+                                                </span>
                                             </div>
-                                            {structure.origin_info && (
-                                                <div className="col-span-2">
-                                                    <span className="text-gray-500">Origine:</span>
-                                                    <p className="mt-1 text-gray-700 italic">{structure.origin_info}</p>
+                                            {structure.website_url && (
+                                                <div className="md:col-span-2">
+                                                    <span className="text-gray-500">Site Web:</span>
+                                                    <a href={structure.website_url} target="_blank" rel="noopener noreferrer" className="ml-2 text-[#e6244d] hover:underline font-medium">
+                                                        {structure.website_url}
+                                                    </a>
                                                 </div>
                                             )}
                                         </div>
+                                        {structure.origin_info && (
+                                            <div className="bg-gray-50 p-3 rounded-lg text-sm border border-gray-100">
+                                                <span className="text-gray-500 block mb-1">Origine :</span>
+                                                <p className="text-gray-700 italic">{structure.origin_info}</p>
+                                            </div>
+                                        )}
                                     </div>
-                                    <div className="flex gap-2">
+                                    <div className="flex flex-row md:flex-col gap-2 shrink-0">
                                         <button
                                             onClick={() => handleValidateStructure(structure.id, 'validée')}
-                                            className="flex items-center gap-1.5 px-4 py-2 bg-green-50 text-green-700 rounded-lg text-sm font-medium hover:bg-green-100 transition-colors"
+                                            className="flex items-center justify-center gap-1.5 px-4 py-2 bg-green-50 text-green-700 rounded-lg text-sm font-medium hover:bg-green-100 transition-colors"
                                             title="Valider"
                                         >
                                             <CheckCircle className="w-4 h-4" />
@@ -175,7 +187,7 @@ export default function Settings() {
                                         </button>
                                         <button
                                             onClick={() => handleValidateStructure(structure.id, 'refusée')}
-                                            className="flex items-center gap-1.5 px-4 py-2 bg-red-50 text-red-700 rounded-lg text-sm font-medium hover:bg-red-100 transition-colors"
+                                            className="flex items-center justify-center gap-1.5 px-4 py-2 bg-red-50 text-red-700 rounded-lg text-sm font-medium hover:bg-red-100 transition-colors"
                                             title="Refuser"
                                         >
                                             <XCircle className="w-4 h-4" />
@@ -211,11 +223,10 @@ export default function Settings() {
                                     <div className="flex-1">
                                         <div className="flex items-center gap-2 mb-2">
                                             <h3 className="font-bold text-lg text-[#22081c]">{mission.title}</h3>
-                                            <span className={`px-2 py-0.5 text-xs font-bold rounded-full ${
-                                                mission.status === 'completed'
-                                                    ? 'bg-green-100 text-green-700'
-                                                    : 'bg-blue-100 text-blue-700'
-                                            }`}>
+                                            <span className={`px-2 py-0.5 text-xs font-bold rounded-full ${mission.status === 'completed'
+                                                ? 'bg-green-100 text-green-700'
+                                                : 'bg-blue-100 text-blue-700'
+                                                }`}>
                                                 {mission.status === 'completed' ? 'TERMINÉE' : 'EN COURS'}
                                             </span>
                                         </div>
@@ -297,7 +308,7 @@ export default function Settings() {
                     </div>
                 )}
             </section>
-        </main>
+        </main >
     );
 }
 
