@@ -34,7 +34,8 @@ export function MissionForm({ onClose, onSuccess, initialData }: MissionFormProp
         end_date: initialData?.end_date || '',
         image_url: initialData?.image_url || '',
         mission_type: initialData?.mission_type || '', // 'voyageur' or 'animateur'
-        fundraising_url: initialData?.fundraising_url || '' // URL de la cagnotte
+        fundraising_url: initialData?.fundraising_url || '', // URL de la cagnotte
+        status: initialData?.status || 'active'
     });
 
     const isEditing = !!initialData;
@@ -239,6 +240,34 @@ export function MissionForm({ onClose, onSuccess, initialData }: MissionFormProp
                                     <p className="text-gray-500 text-sm leading-relaxed">J'encadre des enfants et je souhaite les faire participer à une action solidaire.</p>
                                 </div>
                             </button>
+                        </div>
+                    )}
+
+                    {step === 1 && isEditing && (
+                        <div className="mt-8 space-y-4 animate-in slide-in-from-bottom-4 duration-500 delay-150">
+                            <label className="block text-sm font-bold text-gray-700 mb-2 px-1">Statut de la mission</label>
+                            <div className="flex gap-2 p-1 bg-gray-50 rounded-2xl border border-gray-100">
+                                <button
+                                    type="button"
+                                    onClick={() => setFormData(prev => ({ ...prev, status: 'active' }))}
+                                    className={`flex-1 py-3 px-4 rounded-xl text-sm font-bold transition-all ${formData.status === 'active'
+                                        ? 'bg-white text-blue-600 shadow-sm border border-gray-100'
+                                        : 'text-gray-500 hover:text-gray-700'
+                                        }`}
+                                >
+                                    EN COURS
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setFormData(prev => ({ ...prev, status: 'completed' }))}
+                                    className={`flex-1 py-3 px-4 rounded-xl text-sm font-bold transition-all ${formData.status === 'completed'
+                                        ? 'bg-white text-green-600 shadow-sm border border-gray-100'
+                                        : 'text-gray-500 hover:text-gray-700'
+                                        }`}
+                                >
+                                    TERMINÉE
+                                </button>
+                            </div>
                         </div>
                     )}
 

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { supabase } from '@/lib/supabase';
 import { Link, useNavigate } from 'react-router-dom';
 import useEmblaCarousel from 'embla-carousel-react';
 import { Calendar, Users, ArrowRight, Send, CheckCircle, Target, DollarSign, Plane, GraduationCap, Package } from 'lucide-react';
@@ -13,6 +14,32 @@ export function ResourceGrid() {
   const { user } = useAuth();
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true });
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [impactMetrics, setImpactMetrics] = useState({
+    value1: '23',
+    label1: 'structures aidées',
+    value2: '580',
+    label2: 'enfants aidés'
+  });
+
+  useEffect(() => {
+    fetchImpactMetrics();
+  }, []);
+
+  const fetchImpactMetrics = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('site_config')
+        .select('value')
+        .eq('key', 'impact_metrics')
+        .single();
+
+      if (data) {
+        setImpactMetrics((data as any).value);
+      }
+    } catch (error) {
+      console.error('Error fetching impact metrics:', error);
+    }
+  };
 
   const onSelect = useCallback(() => {
     if (!emblaApi) return;
@@ -263,13 +290,13 @@ export function ResourceGrid() {
 
               <div className="space-y-6 md:space-y-8">
                 <div>
-                  <div className="text-4xl md:text-6xl font-bold mb-2">23</div>
-                  <p className="text-white/70 text-sm md:text-base">structures aidées</p>
+                  <div className="text-4xl md:text-6xl font-bold mb-2">{impactMetrics.value1}</div>
+                  <p className="text-white/70 text-sm md:text-base">{impactMetrics.label1}</p>
                 </div>
 
                 <div>
-                  <div className="text-4xl md:text-6xl font-bold mb-2">580</div>
-                  <p className="text-white/70 text-sm md:text-base">enfants aidés</p>
+                  <div className="text-4xl md:text-6xl font-bold mb-2">{impactMetrics.value2}</div>
+                  <p className="text-white/70 text-sm md:text-base">{impactMetrics.label2}</p>
                 </div>
               </div>
 
