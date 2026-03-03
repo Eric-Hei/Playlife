@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { Database } from '@/types/database.types';
-import { Shield, CheckCircle, XCircle, Building2, Target, Edit2, Save, TrendingUp, Send } from 'lucide-react';
+import { Shield, CheckCircle, XCircle, Building2, Target, Edit2, TrendingUp, Send, Trash2, Plus, Image as ImageIcon, Upload, X } from 'lucide-react';
 import packageJson from '../../../package.json';
 import { MissionForm } from '@/app/components/MissionForm';
 
@@ -50,7 +50,7 @@ export default function Settings() {
                 .from('site_config')
                 .select('value')
                 .eq('key', 'impact_metrics')
-                .single();
+                .maybeSingle();
 
             if (data) {
                 setImpactMetrics((data as any).value);
@@ -128,10 +128,102 @@ export default function Settings() {
 
     const [showMissionForm, setShowMissionForm] = useState(false);
     const [selectedMission, setSelectedMission] = useState<any>(null);
+    const [allStructures, setAllStructures] = useState<any[]>([]);
+    const [showAddStructureForm, setShowAddStructureForm] = useState(false);
+    const [slideshowPhotos, setSlideshowPhotos] = useState<string[]>([]);
+    const [uploadingSlideshow, setUploadingSlideshow] = useState(false);
+    const slideshowInputRef = useRef<HTMLInputElement>(null);
+    const [newStructure, setNewStructure] = useState({
+        name: '', description: '', type: '', address: '', city: '', country: '',
+        contact_name: '', contact_email: '', contact_phone: '', website_url: ''
+    });
 
     async function handleEditMission(mission: any) {
         setSelectedMission(mission);
         setShowMissionForm(true);
+    }
+
+    useEffect(() => {
+        if (profile?.is_super_admin) {
+            fetchAllStructures();
+            fetchSlideshowPhotos();
+        }
+    }, [profile]);
+
+    async function fetchAllStructures() {
+        const { data, error } = await supabase
+            .from('structures')
+            .select('*')
+            .order('created_at', { ascending: false });
+        if (!error) setAllStructures(data || []);
+    }
+
+    async function fetchSlideshowPhotos() {
+        const { data } = await supabase
+            .from('site_config')
+            .select('value')
+            .eq('key', 'slideshow_photos')
+            .maybeSingle();
+        if (data) setSlideshowPhotos((data as any).value || []);
+    }
+
+    async function handleDeleteStructure(structureId: string) {
+        if (!confirm('Êtes-vous sûr de vouloir supprimer cette structure ? Cette action est irréversible.')) return;
+        const { error } = await (supabase.from('structures') as any).delete().eq('id', structureId);
+        if (error) { alert(`Erreur: ${error.message}`); return; }
+        await fetchAllStructures();
+        await fetchPendingStructures();
+    }
+
+    async function handleAddStructure() {
+        if (!newStructure.name.trim()) { alert('Le nom de la structure est requis.'); return; }
+        const { error } = await (supabase.from('structures') as any).insert({
+            ...newStructure,
+            status: 'validée',
+            created_by: profile?.id
+        });
+        if (error) { alert(`Erreur: ${error.message}`); return; }
+        setNewStructure({ name: '', description: '', type: '', address: '', city: '', country: '', contact_name: '', contact_email: '', contact_phone: '', website_url: '' });
+        setShowAddStructureForm(false);
+        await fetchAllStructures();
+    }
+
+    async function handleSlideshowUpload(e: React.ChangeEvent<HTMLInputElement>) {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        if (!file.type.startsWith('image/')) { alert('Veuillez sélectionner une image.'); return; }
+        setUploadingSlideshow(true);
+        try {
+            const fileName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+            const { error: uploadError } = await supabase.storage.from('slideshow').upload(fileName, file, { upsert: false });
+            if (uploadError) throw uploadError;
+            const { data: { publicUrl } } = supabase.storage.from('slideshow').getPublicUrl(fileName);
+            const updatedPhotos = [...slideshowPhotos, publicUrl];
+            await (supabase.from('site_config') as any).upsert({ key: 'slideshow_photos', value: updatedPhotos, updated_by: profile?.id });
+            setSlideshowPhotos(updatedPhotos);
+        } catch (err: any) {
+            alert(`Erreur upload: ${err.message}`);
+        } finally {
+            setUploadingSlideshow(false);
+            if (slideshowInputRef.current) slideshowInputRef.current.value = '';
+        }
+    }
+
+    async function handleDeleteSlideshowPhoto(photoUrl: string) {
+        if (!confirm('Supprimer cette photo du diaporama ?')) return;
+        const fileName = photoUrl.split('/').pop();
+        if (fileName) await supabase.storage.from('slideshow').remove([fileName]);
+        const updatedPhotos = slideshowPhotos.filter(p => p !== photoUrl);
+        await (supabase.from('site_config') as any).upsert({ key: 'slideshow_photos', value: updatedPhotos, updated_by: profile?.id });
+        setSlideshowPhotos(updatedPhotos);
+    }
+
+    function getStatusBadge(status: string | null) {
+        switch (status) {
+            case 'validée': return <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs font-bold rounded-full">Validée</span>;
+            case 'refusée': return <span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs font-bold rounded-full">Refusée</span>;
+            default: return <span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-xs font-bold rounded-full">En attente</span>;
+        }
     }
 
     if (!profile?.is_super_admin) {
@@ -239,6 +331,106 @@ export default function Settings() {
                     ) : (
                         <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-200 text-center">
                             <p className="text-gray-600">Aucune structure en attente de validation.</p>
+                        </div>
+                    )}
+                </section>
+
+                {/* Section Toutes les structures */}
+                <section className="mb-8">
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-2">
+                            <Building2 className="w-5 h-5 text-[#22081c]" />
+                            <h2 className="text-xl font-bold text-[#22081c]">Toutes les structures</h2>
+                            <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs font-bold rounded-full">{allStructures.length}</span>
+                        </div>
+                        <button
+                            onClick={() => setShowAddStructureForm(v => !v)}
+                            className="flex items-center gap-2 px-4 py-2 bg-[#22081c] text-white rounded-xl text-sm font-medium hover:bg-[#1a0616] transition-colors"
+                        >
+                            <Plus className="w-4 h-4" aria-hidden="true" />
+                            Ajouter une structure
+                        </button>
+                    </div>
+
+                    {/* Formulaire d'ajout inline */}
+                    {showAddStructureForm && (
+                        <div className="bg-white rounded-xl border border-gray-200 p-6 mb-4 shadow-sm">
+                            <h3 className="font-bold text-[#22081c] mb-4">Nouvelle structure (validée directement)</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="md:col-span-2">
+                                    <label className="block text-xs font-medium text-gray-500 mb-1" htmlFor="struct-name">Nom *</label>
+                                    <input id="struct-name" type="text" value={newStructure.name} onChange={e => setNewStructure(s => ({ ...s, name: e.target.value }))} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-[#e6244d]/20 outline-none" placeholder="Nom de la structure" />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-medium text-gray-500 mb-1" htmlFor="struct-type">Type</label>
+                                    <input id="struct-type" type="text" value={newStructure.type} onChange={e => setNewStructure(s => ({ ...s, type: e.target.value }))} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-[#e6244d]/20 outline-none" placeholder="Ex: école, association..." />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-medium text-gray-500 mb-1" htmlFor="struct-city">Ville</label>
+                                    <input id="struct-city" type="text" value={newStructure.city} onChange={e => setNewStructure(s => ({ ...s, city: e.target.value }))} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-[#e6244d]/20 outline-none" placeholder="Ville" />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-medium text-gray-500 mb-1" htmlFor="struct-country">Pays</label>
+                                    <input id="struct-country" type="text" value={newStructure.country} onChange={e => setNewStructure(s => ({ ...s, country: e.target.value }))} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-[#e6244d]/20 outline-none" placeholder="Pays" />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-medium text-gray-500 mb-1" htmlFor="struct-contact">Contact</label>
+                                    <input id="struct-contact" type="text" value={newStructure.contact_name} onChange={e => setNewStructure(s => ({ ...s, contact_name: e.target.value }))} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-[#e6244d]/20 outline-none" placeholder="Nom du contact" />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-medium text-gray-500 mb-1" htmlFor="struct-email">Email</label>
+                                    <input id="struct-email" type="email" value={newStructure.contact_email} onChange={e => setNewStructure(s => ({ ...s, contact_email: e.target.value }))} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-[#e6244d]/20 outline-none" placeholder="email@exemple.com" />
+                                </div>
+                                <div className="md:col-span-2">
+                                    <label className="block text-xs font-medium text-gray-500 mb-1" htmlFor="struct-desc">Description</label>
+                                    <textarea id="struct-desc" value={newStructure.description} onChange={e => setNewStructure(s => ({ ...s, description: e.target.value }))} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-[#e6244d]/20 outline-none" rows={2} placeholder="Description de la structure" />
+                                </div>
+                            </div>
+                            <div className="flex gap-3 mt-4">
+                                <button onClick={handleAddStructure} className="px-5 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors flex items-center gap-2">
+                                    <CheckCircle className="w-4 h-4" aria-hidden="true" />
+                                    Créer la structure
+                                </button>
+                                <button onClick={() => setShowAddStructureForm(false)} className="px-5 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors">
+                                    Annuler
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {allStructures.length > 0 ? (
+                        <div className="grid grid-cols-1 gap-3">
+                            {allStructures.map((structure) => (
+                                <div key={structure.id} className="bg-white rounded-xl border border-gray-200 p-4 flex items-center justify-between gap-4">
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                            <span className="font-bold text-[#22081c] truncate">{structure.name}</span>
+                                            {getStatusBadge(structure.status)}
+                                            {structure.type && <span className="text-xs text-gray-500">{structure.type}</span>}
+                                        </div>
+                                        <p className="text-xs text-gray-500 mt-0.5">{structure.city}{structure.city && structure.country ? ', ' : ''}{structure.country}</p>
+                                    </div>
+                                    <div className="flex items-center gap-2 shrink-0">
+                                        {structure.status !== 'validée' && (
+                                            <button onClick={() => handleValidateStructure(structure.id, 'validée')} className="p-1.5 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors" title="Valider" aria-label={`Valider ${structure.name}`}>
+                                                <CheckCircle className="w-4 h-4" />
+                                            </button>
+                                        )}
+                                        {structure.status !== 'refusée' && (
+                                            <button onClick={() => handleValidateStructure(structure.id, 'refusée')} className="p-1.5 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition-colors" title="Refuser" aria-label={`Refuser ${structure.name}`}>
+                                                <XCircle className="w-4 h-4" />
+                                            </button>
+                                        )}
+                                        <button onClick={() => handleDeleteStructure(structure.id)} className="p-1.5 bg-gray-100 text-gray-600 rounded-lg hover:bg-red-50 hover:text-red-600 transition-colors" title="Supprimer" aria-label={`Supprimer ${structure.name}`}>
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="bg-white p-8 rounded-xl border border-gray-200 text-center">
+                            <p className="text-gray-500">Aucune structure enregistrée.</p>
                         </div>
                     )}
                 </section>
@@ -380,6 +572,46 @@ export default function Settings() {
                                 Enregistrer les chiffres clés
                             </button>
                         </div>
+                    </div>
+                </section>
+
+                {/* Section Gestion du diaporama */}
+                <section className="mb-8">
+                    <div className="flex items-center gap-2 mb-4">
+                        <ImageIcon className="w-5 h-5 text-[#e6244d]" aria-hidden="true" />
+                        <h2 className="text-xl font-bold text-[#22081c]">Photos du diaporama</h2>
+                        <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-bold rounded-full">{slideshowPhotos.length}</span>
+                    </div>
+                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                        {/* Grille des photos existantes */}
+                        {slideshowPhotos.length > 0 ? (
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mb-6">
+                                {slideshowPhotos.map((url, idx) => (
+                                    <div key={url} className="relative group rounded-xl overflow-hidden border border-gray-100 aspect-video">
+                                        <img src={url} alt={`Photo diaporama ${idx + 1}`} className="w-full h-full object-cover" />
+                                        <button
+                                            onClick={() => handleDeleteSlideshowPhoto(url)}
+                                            className="absolute top-2 right-2 w-7 h-7 bg-red-600 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity hover:bg-red-700"
+                                            aria-label={`Supprimer la photo ${idx + 1}`}
+                                        >
+                                            <X className="w-4 h-4" aria-hidden="true" />
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <p className="text-gray-500 text-sm mb-6">Aucune photo dans le diaporama. Les photos par défaut sont affichées.</p>
+                        )}
+                        {/* Bouton d'upload */}
+                        <input ref={slideshowInputRef} type="file" accept="image/*" className="hidden" id="slideshow-upload" onChange={handleSlideshowUpload} aria-label="Ajouter une photo au diaporama" />
+                        <label htmlFor="slideshow-upload" className={`inline-flex items-center gap-2 px-5 py-2.5 bg-[#e6244d] text-white rounded-xl font-medium cursor-pointer hover:bg-[#d11d42] transition-colors text-sm ${uploadingSlideshow ? 'opacity-50 pointer-events-none' : ''}`}>
+                            {uploadingSlideshow ? (
+                                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" aria-hidden="true" />
+                            ) : (
+                                <Upload className="w-4 h-4" aria-hidden="true" />
+                            )}
+                            {uploadingSlideshow ? 'Envoi en cours...' : 'Ajouter une photo'}
+                        </label>
                     </div>
                 </section>
             </main >

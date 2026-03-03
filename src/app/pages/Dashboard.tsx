@@ -196,10 +196,14 @@ export default function Dashboard() {
                 <div className="relative z-10">
                     <div className="flex flex-col md:flex-row md:items-center gap-6">
                         <div className="w-24 h-24 rounded-2xl bg-white/10 backdrop-blur-sm flex items-center justify-center border border-white/20 overflow-hidden shrink-0 group relative">
-                            {profile?.avatar_url || (isEditingProfile && editFormData.avatar_url) ? (
-                                <img src={isEditingProfile ? editFormData.avatar_url : profile?.avatar_url as string} alt="" className="w-full h-full object-cover" />
+                            {(isEditingProfile ? editFormData.avatar_url : profile?.avatar_url) ? (
+                                <img
+                                    src={`${isEditingProfile ? editFormData.avatar_url : profile?.avatar_url}?t=${Date.now()}`}
+                                    alt="Avatar"
+                                    className="w-full h-full object-cover"
+                                />
                             ) : (
-                                <User className="w-12 h-12 text-white/70" />
+                                <User className="w-12 h-12 text-white/70" aria-hidden="true" />
                             )}
                         </div>
 
@@ -283,13 +287,12 @@ export default function Dashboard() {
                                     </h1>
                                     <div className="flex items-center gap-3 flex-wrap">
                                         <span className="px-3 py-1 bg-[#e6244d] rounded-full text-xs font-semibold uppercase tracking-wide">
-                                            {profile?.role || (user ? "Profil manquant" : 'Membre')}
+                                            {profile?.user_type === 'voyageur'
+                                                ? '✈️ Voyageur solidaire'
+                                                : profile?.user_type === 'animateur'
+                                                    ? '🎓 Animateur / Enseignant'
+                                                    : 'Membre'}
                                         </span>
-                                        {profile?.user_type && (
-                                            <span className="px-3 py-1 bg-white/20 rounded-full text-xs font-semibold">
-                                                {profile.user_type === 'voyageur' ? '✈️ Voyageur' : '🎓 Enseignant'}
-                                            </span>
-                                        )}
                                         <button
                                             onClick={() => setIsEditingProfile(true)}
                                             className="text-white/60 hover:text-white transition-colors text-xs font-medium flex items-center gap-1"

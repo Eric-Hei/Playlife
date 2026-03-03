@@ -2,11 +2,12 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Link, useNavigate } from 'react-router-dom';
 import useEmblaCarousel from 'embla-carousel-react';
-import { Calendar, Users, ArrowRight, Send, CheckCircle, Target, DollarSign, Plane, GraduationCap, Package } from 'lucide-react';
+import { ArrowRight, Send, CheckCircle, Target, DollarSign, Plane, GraduationCap, Package } from 'lucide-react';
 import photo1 from '@/assets/f399f68985e7900257d342fc0c1a4ab4f702eefe.png';
 import photo2 from '@/assets/4e531e27501e1b1580ce8c44771efd6b2cf317e3.png';
 import photo3 from '@/assets/91b18a520ccc545782d867796a103855745c2162.png';
 import { AuthCard } from './AuthCard';
+import { MissionForm } from './MissionForm';
 import { useAuth } from '@/contexts/AuthContext';
 
 export function ResourceGrid() {
@@ -14,6 +15,8 @@ export function ResourceGrid() {
   const { user } = useAuth();
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true });
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [showMissionForm, setShowMissionForm] = useState(false);
+  const [slideshowPhotos, setSlideshowPhotos] = useState<string[]>([]);
   const [impactMetrics, setImpactMetrics] = useState({
     value1: '23',
     label1: 'structures aidées',
@@ -23,7 +26,23 @@ export function ResourceGrid() {
 
   useEffect(() => {
     fetchImpactMetrics();
+    fetchSlideshowPhotos();
   }, []);
+
+  const fetchSlideshowPhotos = async () => {
+    try {
+      const { data } = await supabase
+        .from('site_config')
+        .select('value')
+        .eq('key', 'slideshow_photos')
+        .maybeSingle();
+      if (data && Array.isArray((data as any).value) && (data as any).value.length > 0) {
+        setSlideshowPhotos((data as any).value);
+      }
+    } catch {
+      // Utilise les photos par défaut si pas de config
+    }
+  };
 
   const fetchImpactMetrics = async () => {
     try {
@@ -31,7 +50,7 @@ export function ResourceGrid() {
         .from('site_config')
         .select('value')
         .eq('key', 'impact_metrics')
-        .single();
+        .maybeSingle();
 
       if (data) {
         setImpactMetrics((data as any).value);
@@ -62,9 +81,10 @@ export function ResourceGrid() {
     };
   }, [emblaApi, onSelect]);
 
-  const photos = [photo1, photo2, photo3];
+  const photos = slideshowPhotos.length > 0 ? slideshowPhotos : [photo1, photo2, photo3];
 
   return (
+    <>
     <div className="px-4 md:px-8 py-4 md:py-6 border-t border-gray-100">
       {/* Header with title */}
       <div className="mb-6 md:mb-10">
@@ -156,7 +176,7 @@ export function ResourceGrid() {
               </div>
 
               <button
-                onClick={() => user ? navigate('/missions') : navigate('/login?create=true')}
+                onClick={() => user ? setShowMissionForm(true) : navigate('/login?create=true')}
                 className="w-full mt-4 md:mt-6 px-6 py-2.5 md:py-3 bg-[#e6244d] text-white rounded-lg hover:bg-[#d11d42] transition-colors text-sm font-medium text-center"
               >
                 Créer une mission
@@ -192,7 +212,7 @@ export function ResourceGrid() {
               </div>
 
               <button
-                onClick={() => user ? navigate('/missions') : navigate('/login?create=true')}
+                onClick={() => user ? setShowMissionForm(true) : navigate('/login?create=true')}
                 className="w-full mt-4 md:mt-6 px-6 py-2.5 md:py-3 bg-[#22081c] text-white rounded-lg hover:bg-[#1a0616] transition-colors text-sm font-medium text-center"
               >
                 Créer une mission
@@ -236,8 +256,8 @@ export function ResourceGrid() {
                   <Package className="w-7 h-7 md:w-8 md:h-8 text-[#e6244d]" />
                 </div>
                 <div className="w-10 h-10 bg-[#e6244d] text-white rounded-full flex items-center justify-center mx-auto mb-3 font-bold">3</div>
-                <h4 className="font-semibold text-[#22081c] mb-2 text-sm">Acheter le matériel</h4>
-                <p className="text-xs text-gray-600">Constituez votre pack sportif</p>
+                <h4 className="font-semibold text-[#22081c] mb-2 text-sm">Constituer le pack</h4>
+                <p className="text-xs text-gray-600">à partir du matériel reçu</p>
               </div>
 
               <div className="text-center">
@@ -314,5 +334,16 @@ export function ResourceGrid() {
 
       </div>
     </div>
+
+    {showMissionForm && (
+      <MissionForm
+        onClose={() => setShowMissionForm(false)}
+        onSuccess={() => {
+          setShowMissionForm(false);
+          navigate('/dashboard');
+        }}
+      />
+    )}
+  </>
   );
 }

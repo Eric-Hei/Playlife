@@ -118,15 +118,14 @@ ON profiles FOR INSERT
 TO authenticated
 WITH CHECK (auth.uid() = id);
 
--- 4. Modification (son propre profil, sans changer is_super_admin)
+-- 4. Modification (son propre profil)
+-- Note: La clause WITH CHECK simple suffit car le code frontend n'envoie jamais is_super_admin.
+-- Une sous-requête sur la même table avec RLS causait une récursion PostgreSQL et bloquait les UPDATE.
 CREATE POLICY "Users can update their own profile"
 ON profiles FOR UPDATE
 TO authenticated
 USING (auth.uid() = id)
-WITH CHECK (
-    auth.uid() = id 
-    AND is_super_admin = (SELECT is_super_admin FROM profiles WHERE id = auth.uid())
-);
+WITH CHECK (auth.uid() = id);
 
 -- 5. Modification (super admins peuvent tout modifier)
 CREATE POLICY "Super admins can update all profiles"
