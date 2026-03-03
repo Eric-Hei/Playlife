@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { Database } from '@/types/database.types';
-import { Shield, CheckCircle, XCircle, Building2, Target, Edit2, TrendingUp, Send, Trash2, Plus, Image as ImageIcon, Upload, X } from 'lucide-react';
+import { Shield, CheckCircle, XCircle, Building2, Target, Edit2, TrendingUp, Send, Trash2, Plus, Image as ImageIcon, Upload, X, ChevronDown, Save } from 'lucide-react';
 import packageJson from '../../../package.json';
 import { MissionForm } from '@/app/components/MissionForm';
 
@@ -137,6 +137,10 @@ export default function Settings() {
         name: '', description: '', type: '', address: '', city: '', country: '',
         contact_name: '', contact_email: '', contact_phone: '', website_url: ''
     });
+    const [expandedStructureId, setExpandedStructureId] = useState<string | null>(null);
+    const [editingStructureId, setEditingStructureId] = useState<string | null>(null);
+    const [editStructureData, setEditStructureData] = useState<any>(null);
+    const [structuresPage, setStructuresPage] = useState(1);
 
     async function handleEditMission(mission: any) {
         setSelectedMission(mission);
@@ -188,6 +192,35 @@ export default function Settings() {
         await fetchAllStructures();
     }
 
+    async function handleSaveStructure() {
+        if (!editingStructureId || !editStructureData) return;
+        const { error } = await (supabase.from('structures') as any)
+            .update(editStructureData)
+            .eq('id', editingStructureId);
+        if (error) { alert(`Erreur: ${error.message}`); return; }
+        setEditingStructureId(null);
+        setEditStructureData(null);
+        await fetchAllStructures();
+    }
+
+    function startEditingStructure(structure: any) {
+        setEditingStructureId(structure.id);
+        setEditStructureData({
+            name: structure.name || '',
+            description: structure.description || '',
+            type: structure.type || '',
+            address: structure.address || '',
+            city: structure.city || '',
+            country: structure.country || '',
+            contact_name: structure.contact_name || '',
+            contact_email: structure.contact_email || '',
+            contact_phone: structure.contact_phone || '',
+            website_url: structure.website_url || '',
+            status: structure.status || 'à valider playlife'
+        });
+        setExpandedStructureId(structure.id);
+    }
+
     async function handleSlideshowUpload(e: React.ChangeEvent<HTMLInputElement>) {
         const file = e.target.files?.[0];
         if (!file) return;
@@ -225,6 +258,13 @@ export default function Settings() {
             default: return <span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-xs font-bold rounded-full">En attente</span>;
         }
     }
+
+    const STRUCTURES_PER_PAGE = 10;
+    const totalStructurePages = Math.ceil(allStructures.length / STRUCTURES_PER_PAGE);
+    const paginatedStructures = allStructures.slice(
+        (structuresPage - 1) * STRUCTURES_PER_PAGE,
+        structuresPage * STRUCTURES_PER_PAGE
+    );
 
     if (!profile?.is_super_admin) {
         return null;
@@ -399,35 +439,186 @@ export default function Settings() {
                     )}
 
                     {allStructures.length > 0 ? (
-                        <div className="grid grid-cols-1 gap-3">
-                            {allStructures.map((structure) => (
-                                <div key={structure.id} className="bg-white rounded-xl border border-gray-200 p-4 flex items-center justify-between gap-4">
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2 flex-wrap">
-                                            <span className="font-bold text-[#22081c] truncate">{structure.name}</span>
-                                            {getStatusBadge(structure.status)}
-                                            {structure.type && <span className="text-xs text-gray-500">{structure.type}</span>}
+                        <>
+                            {allStructures.length > STRUCTURES_PER_PAGE && (
+                                <p className="text-xs text-gray-500 mb-3">
+                                    Page {structuresPage} / {totalStructurePages} — {allStructures.length} structure{allStructures.length > 1 ? 's' : ''}
+                                </p>
+                            )}
+                            <div className="grid grid-cols-1 gap-3" role="list" aria-label="Liste de toutes les structures">
+                                {paginatedStructures.map((structure) => {
+                                    const isExpanded = expandedStructureId === structure.id;
+                                    const isEditing = editingStructureId === structure.id;
+                                    return (
+                                        <div key={structure.id} className="bg-white rounded-xl border border-gray-200 overflow-hidden" role="listitem">
+                                            {/* Ligne de résumé */}
+                                            <div className="p-4 flex items-center justify-between gap-4">
+                                                <button
+                                                    onClick={() => setExpandedStructureId(isExpanded ? null : structure.id)}
+                                                    className="flex items-center gap-2 flex-1 min-w-0 text-left"
+                                                    aria-expanded={isExpanded}
+                                                    aria-controls={`structure-details-${structure.id}`}
+                                                >
+                                                    <ChevronDown className={`w-4 h-4 text-gray-400 flex-shrink-0 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} aria-hidden="true" />
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex items-center gap-2 flex-wrap">
+                                                            <span className="font-bold text-[#22081c] truncate">{structure.name}</span>
+                                                            {getStatusBadge(structure.status)}
+                                                            {structure.type && <span className="text-xs text-gray-500">{structure.type}</span>}
+                                                        </div>
+                                                        <p className="text-xs text-gray-500 mt-0.5">{structure.city}{structure.city && structure.country ? ', ' : ''}{structure.country}</p>
+                                                    </div>
+                                                </button>
+                                                <div className="flex items-center gap-2 shrink-0">
+                                                    {structure.status !== 'validée' && (
+                                                        <button onClick={() => handleValidateStructure(structure.id, 'validée')} className="p-1.5 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors" aria-label={`Valider ${structure.name}`}>
+                                                            <CheckCircle className="w-4 h-4" aria-hidden="true" />
+                                                        </button>
+                                                    )}
+                                                    {structure.status !== 'refusée' && (
+                                                        <button onClick={() => handleValidateStructure(structure.id, 'refusée')} className="p-1.5 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition-colors" aria-label={`Refuser ${structure.name}`}>
+                                                            <XCircle className="w-4 h-4" aria-hidden="true" />
+                                                        </button>
+                                                    )}
+                                                    <button onClick={() => startEditingStructure(structure)} className="p-1.5 bg-pink-50 text-[#e6244d] rounded-lg hover:bg-pink-100 transition-colors" aria-label={`Modifier ${structure.name}`}>
+                                                        <Edit2 className="w-4 h-4" aria-hidden="true" />
+                                                    </button>
+                                                    <button onClick={() => handleDeleteStructure(structure.id)} className="p-1.5 bg-gray-100 text-gray-600 rounded-lg hover:bg-red-50 hover:text-red-600 transition-colors" aria-label={`Supprimer ${structure.name}`}>
+                                                        <Trash2 className="w-4 h-4" aria-hidden="true" />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            {/* Panneau dépliable */}
+                                            {isExpanded && (
+                                                <div
+                                                    id={`structure-details-${structure.id}`}
+                                                    className="border-t border-gray-100 p-4 bg-gray-50"
+                                                >
+                                                    {isEditing ? (
+                                                        <div>
+                                                            <p className="text-xs font-semibold text-gray-500 uppercase mb-3">Modifier la structure</p>
+                                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+                                                                <div className="md:col-span-2">
+                                                                    <label className="block text-xs font-medium text-gray-500 mb-1" htmlFor={`edit-name-${structure.id}`}>Nom *</label>
+                                                                    <input id={`edit-name-${structure.id}`} type="text" value={editStructureData.name} onChange={e => setEditStructureData((d: any) => ({ ...d, name: e.target.value }))} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-[#e6244d]/20 outline-none bg-white" />
+                                                                </div>
+                                                                <div>
+                                                                    <label className="block text-xs font-medium text-gray-500 mb-1" htmlFor={`edit-type-${structure.id}`}>Type</label>
+                                                                    <input id={`edit-type-${structure.id}`} type="text" value={editStructureData.type} onChange={e => setEditStructureData((d: any) => ({ ...d, type: e.target.value }))} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-[#e6244d]/20 outline-none bg-white" />
+                                                                </div>
+                                                                <div>
+                                                                    <label className="block text-xs font-medium text-gray-500 mb-1" htmlFor={`edit-status-${structure.id}`}>Statut</label>
+                                                                    <select id={`edit-status-${structure.id}`} value={editStructureData.status} onChange={e => setEditStructureData((d: any) => ({ ...d, status: e.target.value }))} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-[#e6244d]/20 outline-none bg-white">
+                                                                        <option value="à valider playlife">En attente</option>
+                                                                        <option value="validée">Validée</option>
+                                                                        <option value="refusée">Refusée</option>
+                                                                    </select>
+                                                                </div>
+                                                                <div>
+                                                                    <label className="block text-xs font-medium text-gray-500 mb-1" htmlFor={`edit-city-${structure.id}`}>Ville</label>
+                                                                    <input id={`edit-city-${structure.id}`} type="text" value={editStructureData.city} onChange={e => setEditStructureData((d: any) => ({ ...d, city: e.target.value }))} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-[#e6244d]/20 outline-none bg-white" />
+                                                                </div>
+                                                                <div>
+                                                                    <label className="block text-xs font-medium text-gray-500 mb-1" htmlFor={`edit-country-${structure.id}`}>Pays</label>
+                                                                    <input id={`edit-country-${structure.id}`} type="text" value={editStructureData.country} onChange={e => setEditStructureData((d: any) => ({ ...d, country: e.target.value }))} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-[#e6244d]/20 outline-none bg-white" />
+                                                                </div>
+                                                                <div>
+                                                                    <label className="block text-xs font-medium text-gray-500 mb-1" htmlFor={`edit-contact-${structure.id}`}>Contact</label>
+                                                                    <input id={`edit-contact-${structure.id}`} type="text" value={editStructureData.contact_name} onChange={e => setEditStructureData((d: any) => ({ ...d, contact_name: e.target.value }))} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-[#e6244d]/20 outline-none bg-white" />
+                                                                </div>
+                                                                <div>
+                                                                    <label className="block text-xs font-medium text-gray-500 mb-1" htmlFor={`edit-email-${structure.id}`}>Email</label>
+                                                                    <input id={`edit-email-${structure.id}`} type="email" value={editStructureData.contact_email} onChange={e => setEditStructureData((d: any) => ({ ...d, contact_email: e.target.value }))} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-[#e6244d]/20 outline-none bg-white" />
+                                                                </div>
+                                                                <div>
+                                                                    <label className="block text-xs font-medium text-gray-500 mb-1" htmlFor={`edit-phone-${structure.id}`}>Téléphone</label>
+                                                                    <input id={`edit-phone-${structure.id}`} type="text" value={editStructureData.contact_phone} onChange={e => setEditStructureData((d: any) => ({ ...d, contact_phone: e.target.value }))} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-[#e6244d]/20 outline-none bg-white" />
+                                                                </div>
+                                                                <div className="md:col-span-2">
+                                                                    <label className="block text-xs font-medium text-gray-500 mb-1" htmlFor={`edit-address-${structure.id}`}>Adresse</label>
+                                                                    <input id={`edit-address-${structure.id}`} type="text" value={editStructureData.address} onChange={e => setEditStructureData((d: any) => ({ ...d, address: e.target.value }))} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-[#e6244d]/20 outline-none bg-white" />
+                                                                </div>
+                                                                <div className="md:col-span-2">
+                                                                    <label className="block text-xs font-medium text-gray-500 mb-1" htmlFor={`edit-website-${structure.id}`}>Site web</label>
+                                                                    <input id={`edit-website-${structure.id}`} type="url" value={editStructureData.website_url} onChange={e => setEditStructureData((d: any) => ({ ...d, website_url: e.target.value }))} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-[#e6244d]/20 outline-none bg-white" />
+                                                                </div>
+                                                                <div className="md:col-span-2">
+                                                                    <label className="block text-xs font-medium text-gray-500 mb-1" htmlFor={`edit-desc-${structure.id}`}>Description</label>
+                                                                    <textarea id={`edit-desc-${structure.id}`} value={editStructureData.description} onChange={e => setEditStructureData((d: any) => ({ ...d, description: e.target.value }))} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-[#e6244d]/20 outline-none bg-white" rows={2} />
+                                                                </div>
+                                                            </div>
+                                                            <div className="flex gap-3">
+                                                                <button onClick={handleSaveStructure} className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors">
+                                                                    <Save className="w-4 h-4" aria-hidden="true" />
+                                                                    Enregistrer
+                                                                </button>
+                                                                <button onClick={() => { setEditingStructureId(null); setEditStructureData(null); }} className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors">
+                                                                    Annuler
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <div>
+                                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2 text-sm mb-4">
+                                                                {structure.description && (
+                                                                    <div className="md:col-span-2">
+                                                                        <span className="text-gray-500">Description :</span>
+                                                                        <p className="text-gray-700 mt-0.5">{structure.description}</p>
+                                                                    </div>
+                                                                )}
+                                                                {structure.contact_name && <div><span className="text-gray-500">Contact :</span> <span className="font-medium ml-1">{structure.contact_name}</span></div>}
+                                                                {structure.contact_email && <div><span className="text-gray-500">Email :</span> <span className="font-medium ml-1">{structure.contact_email}</span></div>}
+                                                                {structure.contact_phone && <div><span className="text-gray-500">Téléphone :</span> <span className="font-medium ml-1">{structure.contact_phone}</span></div>}
+                                                                {structure.address && <div><span className="text-gray-500">Adresse :</span> <span className="font-medium ml-1">{structure.address}</span></div>}
+                                                                {structure.website_url && (
+                                                                    <div className="md:col-span-2">
+                                                                        <span className="text-gray-500">Site web :</span>
+                                                                        <a href={structure.website_url} target="_blank" rel="noopener noreferrer" className="ml-1 text-[#e6244d] hover:underline">{structure.website_url}</a>
+                                                                    </div>
+                                                                )}
+                                                                <div><span className="text-gray-500">Créée le :</span> <span className="font-medium ml-1">{new Date(structure.created_at).toLocaleDateString('fr-FR')}</span></div>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
                                         </div>
-                                        <p className="text-xs text-gray-500 mt-0.5">{structure.city}{structure.city && structure.country ? ', ' : ''}{structure.country}</p>
-                                    </div>
-                                    <div className="flex items-center gap-2 shrink-0">
-                                        {structure.status !== 'validée' && (
-                                            <button onClick={() => handleValidateStructure(structure.id, 'validée')} className="p-1.5 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors" title="Valider" aria-label={`Valider ${structure.name}`}>
-                                                <CheckCircle className="w-4 h-4" />
-                                            </button>
-                                        )}
-                                        {structure.status !== 'refusée' && (
-                                            <button onClick={() => handleValidateStructure(structure.id, 'refusée')} className="p-1.5 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition-colors" title="Refuser" aria-label={`Refuser ${structure.name}`}>
-                                                <XCircle className="w-4 h-4" />
-                                            </button>
-                                        )}
-                                        <button onClick={() => handleDeleteStructure(structure.id)} className="p-1.5 bg-gray-100 text-gray-600 rounded-lg hover:bg-red-50 hover:text-red-600 transition-colors" title="Supprimer" aria-label={`Supprimer ${structure.name}`}>
-                                            <Trash2 className="w-4 h-4" />
+                                    );
+                                })}
+                            </div>
+                            {/* Pagination */}
+                            {totalStructurePages > 1 && (
+                                <nav className="flex items-center justify-center gap-2 mt-4" aria-label="Navigation des pages de structures">
+                                    <button
+                                        onClick={() => { setStructuresPage(p => Math.max(1, p - 1)); setExpandedStructureId(null); }}
+                                        disabled={structuresPage === 1}
+                                        className="px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                                        aria-label="Page précédente"
+                                    >
+                                        ←
+                                    </button>
+                                    {Array.from({ length: totalStructurePages }, (_, i) => i + 1).map(page => (
+                                        <button
+                                            key={page}
+                                            onClick={() => { setStructuresPage(page); setExpandedStructureId(null); }}
+                                            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${page === structuresPage ? 'bg-[#22081c] text-white' : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'}`}
+                                            aria-label={`Page ${page}`}
+                                            aria-current={page === structuresPage ? 'page' : undefined}
+                                        >
+                                            {page}
                                         </button>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
+                                    ))}
+                                    <button
+                                        onClick={() => { setStructuresPage(p => Math.min(totalStructurePages, p + 1)); setExpandedStructureId(null); }}
+                                        disabled={structuresPage === totalStructurePages}
+                                        className="px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                                        aria-label="Page suivante"
+                                    >
+                                        →
+                                    </button>
+                                </nav>
+                            )}
+                        </>
                     ) : (
                         <div className="bg-white p-8 rounded-xl border border-gray-200 text-center">
                             <p className="text-gray-500">Aucune structure enregistrée.</p>

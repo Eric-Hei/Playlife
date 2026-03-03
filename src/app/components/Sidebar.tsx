@@ -113,14 +113,20 @@ export function Sidebar({ collapsed, onToggle, mobileOpen, onMobileToggle }: Sid
             <div className="px-4 py-3 mb-2 bg-gray-50 rounded-xl flex items-center gap-3">
               <div className="w-8 h-8 rounded-full bg-white border border-gray-200 flex items-center justify-center overflow-hidden">
                 {profile?.avatar_url ? (
-                  <img src={profile.avatar_url} alt={profile.full_name || ''} className="w-full h-full object-cover" />
+                  <img src={`${profile.avatar_url}?t=${Date.now()}`} alt={profile.full_name || 'Avatar'} className="w-full h-full object-cover" />
                 ) : (
-                  <User className="w-4 h-4 text-gray-400" />
+                  <User className="w-4 h-4 text-gray-400" aria-hidden="true" />
                 )}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-bold text-[#22081c] truncate">{profile?.full_name || "Utilisateur non trouvé"}</p>
-                <p className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">{profile?.role || "Profil manquant"}</p>
+                <p className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">
+                  {profile?.user_type === 'voyageur'
+                    ? '✈️ Voyageur solidaire'
+                    : profile?.user_type === 'animateur'
+                      ? '🎓 Animateur / Enseignant'
+                      : 'Membre'}
+                </p>
               </div>
             </div>
           )}

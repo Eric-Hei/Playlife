@@ -48,9 +48,9 @@ export function Header() {
           )}
           <div className="w-8 h-8 md:w-10 md:h-10 bg-gray-200 rounded-full ml-1 md:ml-2 flex items-center justify-center overflow-hidden border border-gray-100">
             {profile?.avatar_url ? (
-              <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
+              <img src={`${profile.avatar_url}?t=${Date.now()}`} alt={profile.full_name || 'Avatar'} className="w-full h-full object-cover" />
             ) : (
-              <User className="w-4 h-4 md:w-5 md:h-5 text-gray-600" />
+              <User className="w-4 h-4 md:w-5 md:h-5 text-gray-600" aria-hidden="true" />
             )}
           </div>
         </div>
