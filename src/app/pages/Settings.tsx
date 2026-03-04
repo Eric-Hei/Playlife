@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { Database } from '@/types/database.types';
-import { Shield, CheckCircle, XCircle, Building2, Target, Edit2, TrendingUp, Send, Trash2, Plus, Image as ImageIcon, Upload, X, ChevronDown, Save } from 'lucide-react';
+import { Shield, CheckCircle, XCircle, Building2, Target, Edit2, TrendingUp, Send, Trash2, Plus, Image as ImageIcon, Upload, X, ChevronDown, Save, BadgeCheck } from 'lucide-react';
 import packageJson from '../../../package.json';
 import { MissionForm } from '@/app/components/MissionForm';
 
@@ -120,6 +120,7 @@ export default function Settings() {
 
             alert(`Structure ${newStatus === 'validée' ? 'validée' : 'refusée'} avec succès !`);
             await fetchPendingStructures();
+            await fetchAllStructures();
         } catch (error: any) {
             console.error('Error updating structure:', error);
             alert(`Erreur: ${error.message}`);
@@ -192,6 +193,14 @@ export default function Settings() {
         await fetchAllStructures();
     }
 
+    async function handleToggleValidatedByPlaylife(structureId: string, current: boolean) {
+        const { error } = await (supabase.from('structures') as any)
+            .update({ validated_by_playlife: !current })
+            .eq('id', structureId);
+        if (error) { alert(`Erreur: ${error.message}`); return; }
+        await fetchAllStructures();
+    }
+
     async function handleSaveStructure() {
         if (!editingStructureId || !editStructureData) return;
         const { error } = await (supabase.from('structures') as any)
@@ -216,7 +225,8 @@ export default function Settings() {
             contact_email: structure.contact_email || '',
             contact_phone: structure.contact_phone || '',
             website_url: structure.website_url || '',
-            status: structure.status || 'à valider playlife'
+            status: structure.status || 'à valider playlife',
+            validated_by_playlife: structure.validated_by_playlife || false
         });
         setExpandedStructureId(structure.id);
     }
@@ -465,26 +475,47 @@ export default function Settings() {
                                                             <span className="font-bold text-[#22081c] truncate">{structure.name}</span>
                                                             {getStatusBadge(structure.status)}
                                                             {structure.type && <span className="text-xs text-gray-500">{structure.type}</span>}
+                                                            {(structure as any).validated_by_playlife && (
+                                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-orange-50 text-orange-600 text-xs font-semibold rounded-full border border-orange-200">
+                                                                    <BadgeCheck className="w-3 h-3" aria-hidden="true" />
+                                                                    Validée par Playlife
+                                                                </span>
+                                                            )}
                                                         </div>
                                                         <p className="text-xs text-gray-500 mt-0.5">{structure.city}{structure.city && structure.country ? ', ' : ''}{structure.country}</p>
                                                     </div>
                                                 </button>
-                                                <div className="flex items-center gap-2 shrink-0">
+                                                <div className="flex flex-wrap items-center gap-2 shrink-0">
                                                     {structure.status !== 'validée' && (
-                                                        <button onClick={() => handleValidateStructure(structure.id, 'validée')} className="p-1.5 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors" aria-label={`Valider ${structure.name}`}>
+                                                        <button onClick={() => handleValidateStructure(structure.id, 'validée')} className="flex items-center gap-1.5 px-3 py-1.5 bg-green-50 text-green-700 rounded-lg text-sm font-medium hover:bg-green-100 transition-colors" aria-label={`Valider ${structure.name}`}>
                                                             <CheckCircle className="w-4 h-4" aria-hidden="true" />
+                                                            Valider
                                                         </button>
                                                     )}
                                                     {structure.status !== 'refusée' && (
-                                                        <button onClick={() => handleValidateStructure(structure.id, 'refusée')} className="p-1.5 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition-colors" aria-label={`Refuser ${structure.name}`}>
+                                                        <button onClick={() => handleValidateStructure(structure.id, 'refusée')} className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-700 rounded-lg text-sm font-medium hover:bg-red-100 transition-colors" aria-label={`Refuser ${structure.name}`}>
                                                             <XCircle className="w-4 h-4" aria-hidden="true" />
+                                                            Refuser
                                                         </button>
                                                     )}
-                                                    <button onClick={() => startEditingStructure(structure)} className="p-1.5 bg-pink-50 text-[#e6244d] rounded-lg hover:bg-pink-100 transition-colors" aria-label={`Modifier ${structure.name}`}>
-                                                        <Edit2 className="w-4 h-4" aria-hidden="true" />
+                                                    <button
+                                                        onClick={() => structure.status === 'validée' && handleToggleValidatedByPlaylife(structure.id, !!(structure as any).validated_by_playlife)}
+                                                        disabled={structure.status !== 'validée'}
+                                                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${structure.status !== 'validée' ? 'bg-gray-100 text-gray-400 cursor-not-allowed opacity-60' : 'bg-orange-50 text-orange-600 hover:bg-orange-100'}`}
+                                                        aria-pressed={!!(structure as any).validated_by_playlife}
+                                                        aria-disabled={structure.status !== 'validée'}
+                                                        title={structure.status !== 'validée' ? 'La structure doit être validée pour activer ce label' : undefined}
+                                                    >
+                                                        <BadgeCheck className="w-4 h-4" aria-hidden="true" />
+                                                        {(structure as any).validated_by_playlife ? 'Validée par Playlife' : 'Valider par Playlife'}
                                                     </button>
-                                                    <button onClick={() => handleDeleteStructure(structure.id)} className="p-1.5 bg-gray-100 text-gray-600 rounded-lg hover:bg-red-50 hover:text-red-600 transition-colors" aria-label={`Supprimer ${structure.name}`}>
+                                                    <button onClick={() => startEditingStructure(structure)} className="flex items-center gap-1.5 px-3 py-1.5 bg-pink-50 text-[#e6244d] rounded-lg text-sm font-medium hover:bg-pink-100 transition-colors" aria-label={`Modifier ${structure.name}`}>
+                                                        <Edit2 className="w-4 h-4" aria-hidden="true" />
+                                                        Modifier
+                                                    </button>
+                                                    <button onClick={() => handleDeleteStructure(structure.id)} className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 text-gray-600 rounded-lg text-sm font-medium hover:bg-red-50 hover:text-red-600 transition-colors" aria-label={`Supprimer ${structure.name}`}>
                                                         <Trash2 className="w-4 h-4" aria-hidden="true" />
+                                                        Supprimer
                                                     </button>
                                                 </div>
                                             </div>

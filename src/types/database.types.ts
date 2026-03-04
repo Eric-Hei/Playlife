@@ -138,6 +138,7 @@ export interface Database {
                     website_url: string | null
                     image_url: string | null
                     status: string | null
+                    validated_by_playlife: boolean | null
                     origin_info: string | null
                     created_by: string | null
                     created_at: string
@@ -156,6 +157,7 @@ export interface Database {
                     website_url?: string | null
                     image_url?: string | null
                     status?: string | null
+                    validated_by_playlife?: boolean | null
                     origin_info?: string | null
                     created_by?: string | null
                     created_at?: string
@@ -174,6 +176,7 @@ export interface Database {
                     website_url?: string | null
                     image_url?: string | null
                     status?: string | null
+                    validated_by_playlife?: boolean | null
                     origin_info?: string | null
                     created_by?: string | null
                     created_at?: string

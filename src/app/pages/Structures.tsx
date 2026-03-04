@@ -95,12 +95,14 @@ export default function Structures() {
                                     <span className="text-xs text-gray-500 uppercase tracking-wider font-semibold">{structure.type}</span>
                                 </div>
                             </div>
-                            <div className="mb-3">
-                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-green-50 text-green-700 text-xs font-semibold rounded-full border border-green-200">
-                                    <BadgeCheck className="w-3.5 h-3.5" aria-hidden="true" />
-                                    Validée par Playlife
-                                </span>
-                            </div>
+                            {(structure as any).validated_by_playlife && (
+                                <div className="mb-3">
+                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-green-50 text-green-700 text-xs font-semibold rounded-full border border-green-200">
+                                        <BadgeCheck className="w-3.5 h-3.5" aria-hidden="true" />
+                                        Validée par Playlife
+                                    </span>
+                                </div>
+                            )}
                             <p className="text-gray-600 text-sm flex-1 mb-4">{structure.description}</p>
                             <div className="pt-4 border-t border-gray-100 flex flex-col gap-3">
                                 <div className="space-y-1">
