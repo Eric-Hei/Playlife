@@ -32,6 +32,7 @@ export default function Missions() {
             const { data, error: fetchError } = await supabase
                 .from('missions')
                 .select('*')
+                .eq('visible', true)
                 .order('created_at', { ascending: false });
 
             if (fetchError) {

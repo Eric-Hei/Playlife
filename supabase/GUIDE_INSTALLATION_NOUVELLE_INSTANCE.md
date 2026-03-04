@@ -48,6 +48,8 @@
 
 ✅ Crée les politiques Storage pour chaque bucket
 
+> ⚠️ Le bucket `slideshow` n'est **pas** dans ce script — voir Étape 2b ci-dessous.
+
 ### Résultat attendu :
 
 ```
@@ -67,6 +69,82 @@ PROCHAINES ÉTAPES :
 3. Tester l'application
 ========================================
 ```
+
+---
+
+## 🗂️ Étape 2b : Créer le bucket Storage `slideshow`
+
+Le diaporama de la page d'accueil utilise un bucket séparé à créer **manuellement** (l'API ne supporte pas la création via SQL).
+
+### 2b.1 Créer le bucket dans la console Supabase
+
+1. Allez dans **Storage** → **Buckets** → **New bucket**
+2. Nom : `slideshow`
+3. ✅ Activez **"Public bucket"** (obligatoire pour `getPublicUrl()`)
+4. Cliquez **Save**
+
+### 2b.2 Appliquer les policies RLS et la limite de taille
+
+Exécutez ce script dans l'**éditeur SQL** :
+
+```sql
+-- Limite de taille : 5 Mo par fichier
+UPDATE storage.buckets SET file_size_limit = 5242880 WHERE id = 'slideshow';
+
+-- Lecture publique
+CREATE POLICY "slideshow_public_read" ON storage.objects
+  FOR SELECT USING (bucket_id = 'slideshow');
+
+-- Upload réservé aux super admins
+CREATE POLICY "slideshow_super_admin_insert" ON storage.objects
+  FOR INSERT WITH CHECK (
+    bucket_id = 'slideshow'
+    AND EXISTS (
+      SELECT 1 FROM public.profiles
+      WHERE profiles.id = auth.uid()
+      AND profiles.is_super_admin = true
+    )
+  );
+
+-- Suppression réservée aux super admins
+CREATE POLICY "slideshow_super_admin_delete" ON storage.objects
+  FOR DELETE USING (
+    bucket_id = 'slideshow'
+    AND EXISTS (
+      SELECT 1 FROM public.profiles
+      WHERE profiles.id = auth.uid()
+      AND profiles.is_super_admin = true
+    )
+  );
+```
+
+---
+
+## 🗄️ Étape 2c : Migrations complémentaires
+
+Après le script principal, exécutez les scripts de migration additionnels dans cet ordre :
+
+### Colonne `visible` sur les missions (modération)
+
+```sql
+-- Fichier : supabase/add_visible_to_missions.sql
+ALTER TABLE public.missions
+ADD COLUMN IF NOT EXISTS visible boolean DEFAULT false;
+
+-- Rendre visibles les missions existantes (pour ne pas casser l'affichage)
+UPDATE public.missions SET visible = true WHERE visible IS NULL;
+```
+
+### Colonne `validated_by_playlife` sur les structures
+
+```sql
+ALTER TABLE public.structures
+ADD COLUMN IF NOT EXISTS validated_by_playlife boolean DEFAULT false;
+```
+
+### Code postal sur les profils
+
+Exécutez le fichier `supabase/add_postal_code_column.sql`.
 
 ---
 
@@ -190,7 +268,10 @@ netlify deploy --prod --dir=dist --site=playlife
 - [ ] 6 politiques sur `missions`
 - [ ] 5 politiques sur `profiles`
 - [ ] Vue `public_profiles` créée
-- [ ] 3 buckets Storage créés
+- [ ] 3 buckets Storage créés (avatars, missions, mission-media)
+- [ ] Bucket `slideshow` créé (Public) + policies RLS + limite 5 Mo (Étape 2b)
+- [ ] Colonne `visible` ajoutée à `missions` (Étape 2c)
+- [ ] Colonne `validated_by_playlife` ajoutée à `structures` (Étape 2c)
 - [ ] Utilisateur super admin créé
 - [ ] Fichier `.env` configuré
 - [ ] Application testée en local

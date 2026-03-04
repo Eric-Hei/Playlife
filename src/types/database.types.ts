@@ -58,6 +58,7 @@ export interface Database {
                     city: string | null
                     status: string | null
                     fundraising_url: string | null
+                    visible: boolean | null
                     created_at: string
                     created_by: string | null
                 }
@@ -74,6 +75,7 @@ export interface Database {
                     city?: string | null
                     status?: string | null
                     fundraising_url?: string | null
+                    visible?: boolean | null
                     created_at?: string
                     created_by?: string | null
                 }
@@ -90,6 +92,7 @@ export interface Database {
                     country?: string | null
                     city?: string | null
                     status?: string | null
+                    visible?: boolean | null
                     created_at?: string
                     created_by?: string | null
                 }

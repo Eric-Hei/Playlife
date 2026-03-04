@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { Database } from '@/types/database.types';
-import { Shield, CheckCircle, XCircle, Building2, Target, Edit2, TrendingUp, Send, Trash2, Plus, Image as ImageIcon, Upload, X, ChevronDown, Save, BadgeCheck } from 'lucide-react';
+import { Shield, CheckCircle, XCircle, Building2, Target, Edit2, TrendingUp, Send, Trash2, Plus, Image as ImageIcon, Upload, X, ChevronDown, Save, BadgeCheck, Eye, EyeOff, MapPin, Calendar } from 'lucide-react';
 import packageJson from '../../../package.json';
 import { MissionForm } from '@/app/components/MissionForm';
 
@@ -142,10 +142,27 @@ export default function Settings() {
     const [editingStructureId, setEditingStructureId] = useState<string | null>(null);
     const [editStructureData, setEditStructureData] = useState<any>(null);
     const [structuresPage, setStructuresPage] = useState(1);
+    const [expandedMissionId, setExpandedMissionId] = useState<string | null>(null);
+    const [missionsPage, setMissionsPage] = useState(1);
 
     async function handleEditMission(mission: any) {
         setSelectedMission(mission);
         setShowMissionForm(true);
+    }
+
+    async function handleDeleteMission(missionId: string) {
+        if (!confirm('Êtes-vous sûr de vouloir supprimer cette mission ? Cette action est irréversible.')) return;
+        const { error } = await (supabase.from('missions') as any).delete().eq('id', missionId);
+        if (error) { alert(`Erreur: ${error.message}`); return; }
+        await fetchAllMissions();
+    }
+
+    async function handleToggleMissionVisibility(missionId: string, currentVisible: boolean) {
+        const { error } = await (supabase.from('missions') as any)
+            .update({ visible: !currentVisible })
+            .eq('id', missionId);
+        if (error) { alert(`Erreur: ${error.message}`); return; }
+        await fetchAllMissions();
     }
 
     useEffect(() => {
@@ -274,6 +291,13 @@ export default function Settings() {
     const paginatedStructures = allStructures.slice(
         (structuresPage - 1) * STRUCTURES_PER_PAGE,
         structuresPage * STRUCTURES_PER_PAGE
+    );
+
+    const MISSIONS_PER_PAGE = 10;
+    const totalMissionPages = Math.ceil(allMissions.length / MISSIONS_PER_PAGE);
+    const paginatedMissions = allMissions.slice(
+        (missionsPage - 1) * MISSIONS_PER_PAGE,
+        missionsPage * MISSIONS_PER_PAGE
     );
 
     if (!profile?.is_super_admin) {
@@ -668,55 +692,159 @@ export default function Settings() {
                     </div>
 
                     {allMissions.length > 0 ? (
-                        <div className="grid grid-cols-1 gap-4">
-                            {allMissions.map((mission) => (
-                                <div key={mission.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                                    <div className="flex items-start justify-between gap-4">
-                                        <div className="flex-1">
-                                            <div className="flex items-center gap-2 mb-2">
-                                                <h3 className="font-bold text-lg text-[#22081c]">{mission.title}</h3>
-                                                <span className={`px-2 py-0.5 text-xs font-bold rounded-full ${mission.status === 'completed'
-                                                    ? 'bg-green-100 text-green-700'
-                                                    : 'bg-blue-100 text-blue-700'
-                                                    }`}>
-                                                    {mission.status === 'completed' ? 'TERMINÉE' : 'EN COURS'}
-                                                </span>
+                        <>
+                            {allMissions.length > MISSIONS_PER_PAGE && (
+                                <p className="text-xs text-gray-500 mb-3">
+                                    Page {missionsPage} / {totalMissionPages} — {allMissions.length} mission{allMissions.length > 1 ? 's' : ''}
+                                </p>
+                            )}
+                            <div className="grid grid-cols-1 gap-3" role="list" aria-label="Liste de toutes les missions">
+                                {paginatedMissions.map((mission) => {
+                                    const isExpanded = expandedMissionId === mission.id;
+                                    const isVisible = mission.visible === true;
+                                    return (
+                                        <div key={mission.id} className="bg-white rounded-xl border border-gray-200 overflow-hidden" role="listitem">
+                                            {/* Ligne de résumé */}
+                                            <div className="p-4 flex items-center justify-between gap-4">
+                                                <button
+                                                    onClick={() => setExpandedMissionId(isExpanded ? null : mission.id)}
+                                                    className="flex items-center gap-2 flex-1 min-w-0 text-left"
+                                                    aria-expanded={isExpanded}
+                                                    aria-controls={`mission-details-${mission.id}`}
+                                                >
+                                                    <ChevronDown className={`w-4 h-4 text-gray-400 flex-shrink-0 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} aria-hidden="true" />
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex items-center gap-2 flex-wrap">
+                                                            <span className="font-bold text-[#22081c] truncate">{mission.title}</span>
+                                                            <span className={`px-2 py-0.5 text-xs font-bold rounded-full ${mission.status === 'completed' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
+                                                                {mission.status === 'completed' ? 'Terminée' : 'En cours'}
+                                                            </span>
+                                                            {isVisible ? (
+                                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-50 text-green-700 text-xs font-semibold rounded-full border border-green-200">
+                                                                    <Eye className="w-3 h-3" aria-hidden="true" />
+                                                                    Visible
+                                                                </span>
+                                                            ) : (
+                                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-100 text-gray-500 text-xs font-semibold rounded-full border border-gray-200">
+                                                                    <EyeOff className="w-3 h-3" aria-hidden="true" />
+                                                                    Masquée
+                                                                </span>
+                                                            )}
+                                                            {mission.mission_type && <span className="text-xs text-gray-500">{mission.mission_type === 'voyageur' ? '✈️ Voyageur' : '🎓 Animateur'}</span>}
+                                                        </div>
+                                                        <p className="text-xs text-gray-500 mt-0.5">
+                                                            {mission.city}{mission.city && mission.country ? ', ' : ''}{mission.country}
+                                                        </p>
+                                                    </div>
+                                                </button>
+                                                <div className="flex flex-wrap items-center gap-2 shrink-0">
+                                                    <button
+                                                        onClick={() => handleToggleMissionVisibility(mission.id, isVisible)}
+                                                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${isVisible ? 'bg-green-50 text-green-700 hover:bg-green-100' : 'bg-gray-100 text-gray-600 hover:bg-green-50 hover:text-green-700'}`}
+                                                        aria-pressed={isVisible}
+                                                        aria-label={isVisible ? `Masquer la mission ${mission.title}` : `Rendre visible la mission ${mission.title}`}
+                                                    >
+                                                        {isVisible ? <Eye className="w-4 h-4" aria-hidden="true" /> : <EyeOff className="w-4 h-4" aria-hidden="true" />}
+                                                        {isVisible ? 'Visible' : 'Masquée'}
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleEditMission(mission)}
+                                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-pink-50 text-[#e6244d] rounded-lg text-sm font-medium hover:bg-pink-100 transition-colors"
+                                                        aria-label={`Modifier la mission ${mission.title}`}
+                                                    >
+                                                        <Edit2 className="w-4 h-4" aria-hidden="true" />
+                                                        Modifier
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDeleteMission(mission.id)}
+                                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 text-gray-600 rounded-lg text-sm font-medium hover:bg-red-50 hover:text-red-600 transition-colors"
+                                                        aria-label={`Supprimer la mission ${mission.title}`}
+                                                    >
+                                                        <Trash2 className="w-4 h-4" aria-hidden="true" />
+                                                        Supprimer
+                                                    </button>
+                                                </div>
                                             </div>
-                                            <div className="text-sm space-y-1">
-                                                <p className="text-gray-600">{mission.description}</p>
-                                                <p className="text-gray-500">
-                                                    <span className="font-medium">Type:</span> {mission.mission_type}
-                                                </p>
-                                                {mission.fundraising_url && (
-                                                    <p className="text-gray-500">
-                                                        <span className="font-medium">Cagnotte:</span>{' '}
-                                                        <a
-                                                            href={mission.fundraising_url}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className="text-[#e6244d] hover:underline"
-                                                        >
-                                                            {mission.fundraising_url}
-                                                        </a>
-                                                    </p>
-                                                )}
-                                            </div>
+                                            {/* Panneau dépliable */}
+                                            {isExpanded && (
+                                                <div
+                                                    id={`mission-details-${mission.id}`}
+                                                    className="border-t border-gray-100 p-4 bg-gray-50"
+                                                >
+                                                    <p className="text-xs font-semibold text-gray-500 uppercase mb-3">Détails de la mission</p>
+                                                    {mission.description && (
+                                                        <p className="text-sm text-gray-700 mb-3">{mission.description}</p>
+                                                    )}
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                                                        {mission.mission_type && <div><span className="text-gray-500">Type :</span> <span className="font-medium ml-1">{mission.mission_type === 'voyageur' ? '✈️ Voyageur solidaire' : '🎓 Animateur / Enseignant'}</span></div>}
+                                                        {(mission.city || mission.country) && (
+                                                            <div className="flex items-center gap-1">
+                                                                <MapPin className="w-3.5 h-3.5 text-gray-400" aria-hidden="true" />
+                                                                <span className="text-gray-500">Lieu :</span>
+                                                                <span className="font-medium ml-1">{[mission.city, mission.country].filter(Boolean).join(', ')}</span>
+                                                            </div>
+                                                        )}
+                                                        {mission.location && <div><span className="text-gray-500">Localisation :</span> <span className="font-medium ml-1">{mission.location}</span></div>}
+                                                        {(mission.start_date || mission.end_date) && (
+                                                            <div className="flex items-center gap-1 md:col-span-2">
+                                                                <Calendar className="w-3.5 h-3.5 text-gray-400" aria-hidden="true" />
+                                                                <span className="text-gray-500">Dates :</span>
+                                                                <span className="font-medium ml-1">
+                                                                    {mission.start_date ? new Date(mission.start_date).toLocaleDateString('fr-FR') : '?'}
+                                                                    {' → '}
+                                                                    {mission.end_date ? new Date(mission.end_date).toLocaleDateString('fr-FR') : '?'}
+                                                                </span>
+                                                            </div>
+                                                        )}
+                                                        {mission.fundraising_url && (
+                                                            <div className="md:col-span-2">
+                                                                <span className="text-gray-500">Cagnotte :</span>
+                                                                <a href={mission.fundraising_url} target="_blank" rel="noopener noreferrer" className="ml-1 text-[#e6244d] hover:underline break-all">{mission.fundraising_url}</a>
+                                                            </div>
+                                                        )}
+                                                        <div><span className="text-gray-500">Créée le :</span> <span className="font-medium ml-1">{new Date(mission.created_at).toLocaleDateString('fr-FR')}</span></div>
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
-                                        <div className="flex flex-col sm:flex-row gap-2 mt-4 pt-4 border-t border-gray-50">
-                                            <button
-                                                onClick={() => handleEditMission(mission)}
-                                                className="flex items-center justify-center gap-1.5 px-4 py-2 bg-pink-50 text-[#e6244d] rounded-lg text-sm font-medium hover:bg-pink-100 transition-colors"
-                                            >
-                                                <Edit2 className="w-4 h-4" />
-                                                Modifier la mission
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
+                                    );
+                                })}
+                            </div>
+                            {/* Pagination */}
+                            {totalMissionPages > 1 && (
+                                <nav className="flex items-center justify-center gap-2 mt-4" aria-label="Navigation des pages de missions">
+                                    <button
+                                        onClick={() => { setMissionsPage(p => Math.max(1, p - 1)); setExpandedMissionId(null); }}
+                                        disabled={missionsPage === 1}
+                                        className="px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                                        aria-label="Page précédente"
+                                    >
+                                        ←
+                                    </button>
+                                    {Array.from({ length: totalMissionPages }, (_, i) => i + 1).map(page => (
+                                        <button
+                                            key={page}
+                                            onClick={() => { setMissionsPage(page); setExpandedMissionId(null); }}
+                                            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${page === missionsPage ? 'bg-[#22081c] text-white' : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'}`}
+                                            aria-label={`Page ${page}`}
+                                            aria-current={page === missionsPage ? 'page' : undefined}
+                                        >
+                                            {page}
+                                        </button>
+                                    ))}
+                                    <button
+                                        onClick={() => { setMissionsPage(p => Math.min(totalMissionPages, p + 1)); setExpandedMissionId(null); }}
+                                        disabled={missionsPage === totalMissionPages}
+                                        className="px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                                        aria-label="Page suivante"
+                                    >
+                                        →
+                                    </button>
+                                </nav>
+                            )}
+                        </>
                     ) : (
-                        <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-200 text-center">
+                        <div className="bg-white p-8 rounded-xl border border-gray-200 text-center">
                             <p className="text-gray-600">Aucune mission trouvée.</p>
                         </div>
                     )}

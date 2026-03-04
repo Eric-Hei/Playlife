@@ -61,16 +61,28 @@ export function MissionForm({ onClose, onSuccess, initialData }: MissionFormProp
 
                 if (error) throw error;
             } else {
-                // Mode création
-                const { error } = await (supabase
+                // Mode création — mission invisible par défaut, en attente de modération
+                const { data: inserted, error } = await (supabase
                     .from('missions') as any)
                     .insert({
                         ...formData,
                         created_by: user?.id,
-                        status: 'active'
-                    });
+                        status: 'active',
+                        visible: false
+                    })
+                    .select()
+                    .single();
 
                 if (error) throw error;
+
+                // Notification email à l'équipe Playlife
+                try {
+                    await supabase.functions.invoke('notify-new-mission', {
+                        body: { missionTitle: formData.title, missionId: inserted?.id }
+                    });
+                } catch (emailErr) {
+                    console.warn('Notification email non envoyée :', emailErr);
+                }
             }
 
             onSuccess();

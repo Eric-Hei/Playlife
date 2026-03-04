@@ -3,8 +3,8 @@
 -- ============================================
 -- Ce script crée toutes les tables, politiques RLS et vues
 -- À exécuter dans une NOUVELLE instance Supabase
--- Version : 0.0.2
--- Date : 2024-02-13
+-- Version : 0.0.3
+-- Date : 2026-03-04
 
 -- ============================================
 -- ÉTAPE 1 : CRÉATION DES TABLES
@@ -37,6 +37,7 @@ CREATE TABLE IF NOT EXISTS public.missions (
   city TEXT,
   status TEXT DEFAULT 'active',
   fundraising_url TEXT,
+  visible BOOLEAN DEFAULT false,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   created_by UUID REFERENCES public.profiles(id)
 );
@@ -48,6 +49,7 @@ CREATE TABLE IF NOT EXISTS public.structures (
   description TEXT,
   type TEXT,
   address TEXT,
+  postal_code TEXT,
   city TEXT,
   country TEXT,
   contact_email TEXT,
@@ -56,6 +58,7 @@ CREATE TABLE IF NOT EXISTS public.structures (
   website_url TEXT,
   image_url TEXT,
   status TEXT DEFAULT 'à valider playlife' CHECK (status IN ('à valider playlife', 'validée', 'refusée')),
+  validated_by_playlife BOOLEAN DEFAULT false,
   origin_info TEXT,
   created_by UUID REFERENCES auth.users(id) ON DELETE SET NULL,
   created_at TIMESTAMPTZ DEFAULT NOW()
@@ -68,7 +71,16 @@ CREATE TABLE IF NOT EXISTS public.mission_media (
   media_url TEXT NOT NULL,
   media_type TEXT CHECK (media_type IN ('photo', 'video')),
   caption TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  created_by UUID REFERENCES auth.users(id) ON DELETE SET NULL
+);
+
+-- Table site_config (bloc impact, diaporama, etc.)
+CREATE TABLE IF NOT EXISTS public.site_config (
+  key TEXT PRIMARY KEY,
+  value JSONB NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_by UUID REFERENCES auth.users(id)
 );
 
 -- ============================================
@@ -77,9 +89,12 @@ CREATE TABLE IF NOT EXISTS public.mission_media (
 
 COMMENT ON COLUMN profiles.is_super_admin IS 'Indique si l''utilisateur est un super administrateur';
 COMMENT ON COLUMN profiles.user_type IS 'Type d''utilisateur (voyageur/animateur)';
+COMMENT ON COLUMN missions.visible IS 'Mission visible publiquement (modérée par un super admin)';
 COMMENT ON COLUMN structures.contact_name IS 'Nom du contact dans la structure';
 COMMENT ON COLUMN structures.status IS 'Statut de validation de la structure';
 COMMENT ON COLUMN structures.origin_info IS 'Comment l''utilisateur a connu cette structure';
+COMMENT ON COLUMN structures.postal_code IS 'Code postal de la structure';
+COMMENT ON COLUMN structures.validated_by_playlife IS 'Structure partenaire validée officiellement par Playlife';
 
 CREATE INDEX IF NOT EXISTS idx_structures_status ON structures(status);
 CREATE INDEX IF NOT EXISTS idx_structures_created_by ON structures(created_by);
@@ -95,6 +110,7 @@ ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.missions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.structures ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.mission_media ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.site_config ENABLE ROW LEVEL SECURITY;
 
 -- ============================================
 -- ÉTAPE 4 : POLITIQUES RLS - PROFILES (5 politiques)
@@ -287,6 +303,38 @@ USING (
 );
 
 -- ============================================
+-- ÉTAPE 7b : POLITIQUES RLS - SITE_CONFIG
+-- ============================================
+
+-- Lecture publique
+CREATE POLICY "Allow public read-only access"
+ON public.site_config FOR SELECT
+USING (true);
+
+-- Écriture réservée aux super admins
+CREATE POLICY "Allow super admin all access"
+ON public.site_config FOR ALL
+USING (
+    EXISTS (
+        SELECT 1 FROM public.profiles
+        WHERE id = auth.uid() AND is_super_admin = true
+    )
+);
+
+-- Valeurs par défaut
+INSERT INTO public.site_config (key, value)
+VALUES (
+    'impact_metrics',
+    JSONB_BUILD_OBJECT(
+        'value1', '23',
+        'label1', 'structures aidées',
+        'value2', '580',
+        'label2', 'enfants aidés'
+    )
+)
+ON CONFLICT (key) DO NOTHING;
+
+-- ============================================
 -- ÉTAPE 8 : VUE PUBLIC_PROFILES (sans données sensibles)
 -- ============================================
 
@@ -324,6 +372,11 @@ ON CONFLICT (id) DO NOTHING;
 -- Bucket pour les médias de missions terminées
 INSERT INTO storage.buckets (id, name, public)
 VALUES ('mission-media', 'mission-media', true)
+ON CONFLICT (id) DO NOTHING;
+
+-- Bucket pour le diaporama de la page d'accueil (public, limite 5 Mo)
+INSERT INTO storage.buckets (id, name, public, file_size_limit)
+VALUES ('slideshow', 'slideshow', true, 5242880)
 ON CONFLICT (id) DO NOTHING;
 
 -- ============================================
@@ -408,7 +461,43 @@ TO authenticated
 USING (bucket_id = 'mission-media');
 
 -- ============================================
--- ÉTAPE 13 : VÉRIFICATION FINALE
+-- ÉTAPE 13 : POLITIQUES STORAGE - SLIDESHOW
+-- ============================================
+
+-- Lecture publique
+CREATE POLICY "slideshow_public_read"
+ON storage.objects FOR SELECT
+TO public
+USING (bucket_id = 'slideshow');
+
+-- Upload réservé aux super admins
+CREATE POLICY "slideshow_super_admin_insert"
+ON storage.objects FOR INSERT
+TO authenticated
+WITH CHECK (
+    bucket_id = 'slideshow'
+    AND EXISTS (
+        SELECT 1 FROM public.profiles
+        WHERE profiles.id = auth.uid()
+        AND profiles.is_super_admin = true
+    )
+);
+
+-- Suppression réservée aux super admins
+CREATE POLICY "slideshow_super_admin_delete"
+ON storage.objects FOR DELETE
+TO authenticated
+USING (
+    bucket_id = 'slideshow'
+    AND EXISTS (
+        SELECT 1 FROM public.profiles
+        WHERE profiles.id = auth.uid()
+        AND profiles.is_super_admin = true
+    )
+);
+
+-- ============================================
+-- ÉTAPE 14 : VÉRIFICATION FINALE
 -- ============================================
 
 DO $$
@@ -416,32 +505,44 @@ DECLARE
     missions_count INT;
     profiles_count INT;
     structures_count INT;
+    site_config_count INT;
     view_count INT;
+    bucket_count INT;
+    slideshow_exists INT;
 BEGIN
     SELECT COUNT(*) INTO missions_count FROM pg_policies WHERE tablename = 'missions';
     SELECT COUNT(*) INTO profiles_count FROM pg_policies WHERE tablename = 'profiles';
     SELECT COUNT(*) INTO structures_count FROM pg_policies WHERE tablename = 'structures';
+    SELECT COUNT(*) INTO site_config_count FROM pg_policies WHERE tablename = 'site_config';
     SELECT COUNT(*) INTO view_count FROM pg_views WHERE viewname = 'public_profiles';
+    SELECT COUNT(*) INTO bucket_count FROM storage.buckets WHERE id IN ('avatars', 'missions', 'mission-media', 'slideshow');
+    SELECT COUNT(*) INTO slideshow_exists FROM storage.buckets WHERE id = 'slideshow' AND public = true;
 
     RAISE NOTICE '';
     RAISE NOTICE '========================================';
-    RAISE NOTICE 'MIGRATION PLAYLIFE - RÉSULTAT';
+    RAISE NOTICE 'MIGRATION PLAYLIFE v0.0.3 - RÉSULTAT';
     RAISE NOTICE '========================================';
-    RAISE NOTICE 'MISSIONS : % politiques (attendu: 6)', missions_count;
-    RAISE NOTICE 'PROFILES : % politiques (attendu: 5)', profiles_count;
-    RAISE NOTICE 'STRUCTURES : % politiques (attendu: 6)', structures_count;
+    RAISE NOTICE 'MISSIONS      : % politiques (attendu: 6)', missions_count;
+    RAISE NOTICE 'PROFILES      : % politiques (attendu: 5)', profiles_count;
+    RAISE NOTICE 'STRUCTURES    : % politiques (attendu: 6)', structures_count;
+    RAISE NOTICE 'SITE_CONFIG   : % politiques (attendu: 2)', site_config_count;
     RAISE NOTICE 'VUE public_profiles : % (attendu: 1)', view_count;
+    RAISE NOTICE 'BUCKETS       : %/4 créés (avatars, missions, mission-media, slideshow)', bucket_count;
+    RAISE NOTICE 'SLIDESHOW     : % public (attendu: 1)', slideshow_exists;
     RAISE NOTICE '========================================';
 
-    IF missions_count = 6 AND profiles_count = 5 AND structures_count >= 6 AND view_count = 1 THEN
-        RAISE NOTICE '🎉 SUCCÈS ! Toutes les tables et politiques sont créées.';
+    IF missions_count = 6 AND profiles_count = 5 AND structures_count >= 6
+       AND site_config_count >= 2 AND view_count = 1
+       AND bucket_count = 4 AND slideshow_exists = 1 THEN
+        RAISE NOTICE '🎉 SUCCÈS ! Toutes les tables, politiques et buckets sont créés.';
         RAISE NOTICE '';
         RAISE NOTICE 'PROCHAINES ÉTAPES :';
         RAISE NOTICE '1. Créer un utilisateur super admin avec set_super_admin.sql';
         RAISE NOTICE '2. Configurer les variables d''environnement (.env)';
-        RAISE NOTICE '3. Tester l''application';
+        RAISE NOTICE '3. Déployer la Edge Function notify-new-mission';
+        RAISE NOTICE '4. Tester l''application';
     ELSE
-        RAISE NOTICE '⚠️  ATTENTION : Vérifiez les politiques ci-dessus.';
+        RAISE NOTICE '⚠️  ATTENTION : Vérifiez les éléments ci-dessus.';
     END IF;
 
     RAISE NOTICE '========================================';
