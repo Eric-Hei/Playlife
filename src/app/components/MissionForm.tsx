@@ -150,33 +150,35 @@ export function MissionForm({ onClose, onSuccess, initialData }: MissionFormProp
         }
     };
 
+    const validateStep = () => {
+        if (step === 1) return formData.mission_type !== '';
+        if (step === 2) {
+            return (
+                formData.title !== '' &&
+                formData.country !== '' &&
+                formData.city !== '' &&
+                formData.start_date !== '' &&
+                formData.end_date !== ''
+            );
+        }
+        if (step === 3) return formData.description !== '';
+        return true;
+    };
+
     const nextStep = () => {
+        if (step === 2) {
+            if (!formData.title || !formData.country || !formData.city) return;
+            if (!formData.start_date || !formData.end_date) {
+                alert('Veuillez renseigner les dates de départ et de retour');
+                return;
+            }
+        }
         if (validateStep()) {
             setStep(prev => Math.min(prev + 1, totalSteps));
         }
     };
 
     const prevStep = () => setStep(prev => Math.max(prev - 1, 1));
-
-    const validateStep = () => {
-        if (step === 1) {
-            return formData.mission_type !== '';
-        }
-        if (step === 2) {
-            if (formData.title === '' || formData.country === '' || formData.city === '') {
-                return false;
-            }
-            if (formData.start_date === '' || formData.end_date === '') {
-                alert('Veuillez renseigner les dates de départ et de retour');
-                return false;
-            }
-            return true;
-        }
-        if (step === 3) {
-            return formData.description !== '';
-        }
-        return true;
-    };
 
     const progress = (step / totalSteps) * 100;
 
@@ -185,14 +187,16 @@ export function MissionForm({ onClose, onSuccess, initialData }: MissionFormProp
             <div className="bg-white w-full max-w-xl rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col max-h-[90vh] border border-white/20 animate-in fade-in zoom-in duration-300">
 
                 {/* Progress Bar & Header */}
-                <div className="relative pt-8 px-8 flex flex-col items-center">
+                <div className="px-8 pt-5 pb-0 flex justify-end">
                     <button
                         onClick={onClose}
-                        className="absolute right-6 top-6 p-2 hover:bg-gray-100 rounded-full transition-all text-gray-400 hover:text-[#e6244d]"
+                        aria-label="Fermer"
+                        className="p-2 hover:bg-gray-100 rounded-full transition-all text-gray-400 hover:text-[#e6244d]"
                     >
                         <X className="w-5 h-5" />
                     </button>
-
+                </div>
+                <div className="px-8 pt-2 flex flex-col items-center">
                     <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden mb-6">
                         <div
                             className="h-full bg-gradient-to-r from-[#e6244d] to-[#ff4d71] transition-all duration-500 ease-out"
@@ -365,7 +369,7 @@ export function MissionForm({ onClose, onSuccess, initialData }: MissionFormProp
                             <div className="bg-pink-50 border border-pink-100 rounded-2xl p-4">
                                 <p className="text-sm text-gray-700 mb-3">
                                     <span className="font-bold">💰 Besoin de financer votre mission ?</span><br />
-                                    Créez votre cagnotte liée à Playlife grâce au lien suivant : <a href="https://www.leetchi.com" target="_blank" rel="noopener noreferrer" className="text-[#e6244d] underline hover:text-[#c91d41]">leetchi.com</a>
+                                    Créez votre cagnotte liée à Playlife grâce au lien suivant : <a href="https://www.leetchi.org/project/playlife" target="_blank" rel="noopener noreferrer" className="text-[#e6244d] underline hover:text-[#c91d41]">leetchi.org</a>
                                 </p>
                                 <label className="block text-sm font-bold text-gray-700 mb-2 px-1">Lien de votre cagnotte (optionnel)</label>
                                 <div className="relative group">
@@ -375,7 +379,7 @@ export function MissionForm({ onClose, onSuccess, initialData }: MissionFormProp
                                         name="fundraising_url"
                                         value={formData.fundraising_url}
                                         onChange={handleChange}
-                                        placeholder="https://www.leetchi.com/votre-cagnotte"
+                                        placeholder="https://www.leetchi.org/project/playlife"
                                         className="w-full pl-12 pr-4 py-4 bg-white border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-[#e6244d]/10 focus:border-[#e6244d] font-medium transition-all"
                                     />
                                 </div>

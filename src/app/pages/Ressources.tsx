@@ -1,42 +1,66 @@
 import React from 'react';
-import {
-    CheckSquare, BookOpen, FileText,
-    ArrowRight, Lightbulb, ShieldCheck,
-    Plane, Heart, Briefcase, Download
-} from 'lucide-react';
+import { CheckSquare, CircleDot, Camera, Download } from 'lucide-react';
 
-const categories = [
+interface PdfDoc {
+    title: string;
+    file: string;
+}
+
+interface Category {
+    title: string;
+    description: string;
+    icon: React.ReactNode;
+    accentColor: string;
+    bgColor: string;
+    hoverBg: string;
+    hoverBorder: string;
+    hoverText: string;
+    docs: PdfDoc[];
+}
+
+const categories: Category[] = [
     {
-        title: "Checklists",
-        description: "Assurez-vous de ne rien oublier à chaque étape de votre mission.",
+        title: "Avant la mission",
+        description: "Préparez votre mission avec méthode. Chaque étape compte pour maximiser votre impact.",
         icon: <CheckSquare className="w-6 h-6" />,
-        color: "bg-blue-50 text-blue-600",
-        items: [
-            { id: 1, title: "Avant le départ", tasks: ["Valider la structure locale", "Préparer le pack matériel", "Organiser la logistique"] },
-            { id: 2, title: "Sur place", tasks: ["Prendre des photos/vidéos", "Remettre le pack en mains propres", "Recueillir un témoignage"] },
-            { id: 3, title: "Au retour", tasks: ["Partager le compte-rendu", "Éditer l'attestation de mission", "Remercier les donateurs"] }
-        ]
-    },
-    {
-        title: "Guides Pratiques",
-        description: "Des conseils pour optimiser votre impact et votre organisation.",
-        icon: <BookOpen className="w-6 h-6" />,
-        color: "bg-purple-50 text-purple-600",
-        resources: [
-            { title: "Comment choisir sa structure ?", time: "5 min", type: "Guide" },
-            { title: "Réussir sa collecte de matériel", time: "10 min", type: "Best Practices" },
-            { title: "Communiquer sur son projet", time: "8 min", type: "Tuto" }
-        ]
-    },
-    {
-        title: "Documents Utiles",
-        description: "Téléchargez les documents officiels Playlife pour vos démarches.",
-        icon: <FileText className="w-6 h-6" />,
-        color: "bg-orange-50 text-orange-600",
+        accentColor: "text-blue-600",
+        bgColor: "bg-blue-50 text-blue-600",
+        hoverBg: "hover:bg-blue-50",
+        hoverBorder: "hover:border-blue-100",
+        hoverText: "group-hover:text-blue-700",
         docs: [
-            { title: "Lettre de recommandation", format: "PDF" },
-            { title: "Attestation de don matériel", format: "PDF" },
-            { title: "Charte du voyageur solidaire", format: "PDF" }
+            { title: "Prendre contact avec une structure", file: "Playlife_Connect_Comment_prendre_contact_structure_avant_1.pdf" },
+            { title: "Préparer un pack Playlife", file: "Playlife_Connect_Comment_preparer_un_pack_Playlife_avant_2.pdf" },
+            { title: "Communiquer sur sa mission", file: "Playlife_Connect_Comment_communiquer_sur_sa_mission_avant_3.pdf" },
+        ]
+    },
+    {
+        title: "Pendant la mission",
+        description: "Vivez la mission pleinement.\nRemettez le pack et créez un moment de partage.",
+        icon: <CircleDot className="w-6 h-6" />,
+        accentColor: "text-purple-600",
+        bgColor: "bg-purple-50 text-purple-600",
+        hoverBg: "hover:bg-purple-50",
+        hoverBorder: "hover:border-purple-100",
+        hoverText: "group-hover:text-purple-700",
+        docs: [
+            { title: "Courrier remis aux structures", file: "Playlife_Connect_Courrier_structure_pendant_1.pdf" },
+            { title: "Remettre le pack Playlife", file: "Playlife_Connect_Comment_remettre_le_pack_et_creer_des_liens_pendant_2.pdf" },
+            { title: "Exemple de certificat de transport", file: "Playlife_Connect_Certificat_transport_materiel_pendant_3.pdf" },
+        ]
+    },
+    {
+        title: "Après la mission",
+        description: "Prolongez l'impact.\nPartagez votre expérience et inspirez d'autres engagements.",
+        icon: <Camera className="w-6 h-6" />,
+        accentColor: "text-orange-600",
+        bgColor: "bg-orange-50 text-orange-600",
+        hoverBg: "hover:bg-orange-50",
+        hoverBorder: "hover:border-orange-100",
+        hoverText: "group-hover:text-orange-700",
+        docs: [
+            { title: "Souvenirs et compte-rendu de mission", file: "Playlife_Connect_Souvenirs_et_compte_rendu_de_mission_apres_1.pdf" },
+            { title: "Aller plus loin avec Playlife", file: "Playlife_Connect_Devenez_benevole_apres_2.pdf" },
         ]
     }
 ];
@@ -68,69 +92,34 @@ export default function Ressources() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 text-[#22081c]">
                 {categories.map((cat, idx) => (
                     <div key={idx} className="bg-white rounded-[2rem] p-8 shadow-sm border border-gray-100 flex flex-col hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-                        <div className={`w-14 h-14 rounded-2xl ${cat.color} flex items-center justify-center mb-6`}>
+                        <div className={`w-14 h-14 rounded-2xl ${cat.bgColor} flex items-center justify-center mb-6`} aria-hidden="true">
                             {cat.icon}
                         </div>
                         <h2 className="text-2xl font-black mb-3">{cat.title}</h2>
-                        <p className="text-gray-500 font-medium mb-8 flex-1">{cat.description}</p>
+                        <p className="text-gray-500 font-medium mb-8 flex-1 whitespace-pre-line">{cat.description}</p>
 
-                        <div className="space-y-4">
-                            {cat.items && cat.items.map(item => (
-                                <div key={item.id} className="p-4 bg-gray-50 rounded-2xl group hover:bg-blue-50 transition-colors cursor-pointer border border-transparent hover:border-blue-100">
-                                    <div className="flex items-center justify-between">
-                                        <span className="font-bold text-gray-700 group-hover:text-blue-700 transition-colors">{item.title}</span>
-                                        <ArrowRight className="w-4 h-4 text-gray-300 group-hover:text-blue-500 transition-all translate-x-0 group-hover:translate-x-1" />
-                                    </div>
-                                    <p className="text-[10px] text-gray-400 mt-1 uppercase font-black tracking-widest">
-                                        {item.tasks.length} tâches à cocher
-                                    </p>
-                                </div>
-                            ))}
-
-                            {cat.resources && cat.resources.map((res, i) => (
-                                <div key={i} className="p-4 bg-gray-50 rounded-2xl group hover:bg-purple-50 transition-colors cursor-pointer border border-transparent hover:border-purple-100 flex items-center gap-4">
-                                    <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center text-purple-600 shadow-sm">
-                                        <Lightbulb className="w-5 h-5" />
-                                    </div>
-                                    <div className="flex-1">
-                                        <span className="block font-bold text-gray-700 group-hover:text-purple-700 transition-colors text-sm">{res.title}</span>
-                                        <span className="text-[10px] text-gray-400 font-black tracking-tighter uppercase">{res.type} • {res.time}</span>
-                                    </div>
-                                </div>
-                            ))}
-
-                            {cat.docs && cat.docs.map((doc, i) => (
-                                <div key={i} className="p-4 bg-gray-50 rounded-2xl group hover:bg-orange-50 transition-colors cursor-pointer border border-transparent hover:border-orange-100 flex items-center justify-between">
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center text-orange-600 shadow-sm">
-                                            <Download className="w-5 h-5" />
+                        <ul className="space-y-3" aria-label={`Documents — ${cat.title}`}>
+                            {cat.docs.map((doc, i) => (
+                                <li key={i}>
+                                    <a
+                                        href={`/ressources/${doc.file}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className={`group flex items-center gap-4 p-4 bg-gray-50 rounded-2xl border border-transparent ${cat.hoverBg} ${cat.hoverBorder} transition-all`}
+                                        aria-label={`Ouvrir le document : ${doc.title}`}
+                                    >
+                                        <div className={`w-10 h-10 rounded-xl bg-white flex items-center justify-center ${cat.accentColor} shadow-sm flex-shrink-0`}>
+                                            <Download className="w-5 h-5" aria-hidden="true" />
                                         </div>
-                                        <span className="font-bold text-gray-700 group-hover:text-orange-700 transition-colors text-sm">{doc.title}</span>
-                                    </div>
-                                    <span className="text-[10px] bg-orange-100 text-orange-600 px-2 py-1 rounded-md font-black italic">{doc.format}</span>
-                                </div>
+                                        <span className={`font-bold text-gray-700 ${cat.hoverText} transition-colors text-sm`}>
+                                            {doc.title}
+                                        </span>
+                                    </a>
+                                </li>
                             ))}
-                        </div>
+                        </ul>
                     </div>
                 ))}
-            </div>
-
-
-
-            {/* Quick Tips */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="flex items-center gap-4 p-6 bg-green-50 rounded-3xl border border-green-100">
-                    <ShieldCheck className="w-8 h-8 text-green-600" />
-                    <p className="text-sm font-bold text-green-800">Assurance voyage solidaire incluse</p>
-                </div>
-                <div className="flex items-center gap-4 p-6 bg-blue-50 rounded-3xl border border-blue-100">
-                    <Plane className="w-8 h-8 text-blue-600" />
-                    <p className="text-sm font-bold text-blue-800">Partenariats douaniers simplifiés</p>
-                </div>
-                <div className="flex items-center gap-4 p-6 bg-pink-50 rounded-3xl border border-pink-100">
-                    <Heart className="w-8 h-8 text-pink-600" />
-                    <p className="text-sm font-bold text-pink-800">Impact social certifié par Playlife</p>
-                </div>
             </div>
         </div>
     );
