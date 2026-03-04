@@ -96,12 +96,14 @@ export default function Register() {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">Nom complet</label>
+                        <label htmlFor="register-fullname" className="block text-sm font-semibold text-gray-700 mb-2">Nom complet</label>
                         <div className="relative">
-                            <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                            <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" aria-hidden="true" />
                             <input
+                                id="register-fullname"
                                 required
                                 type="text"
+                                autoComplete="name"
                                 value={formData.fullName}
                                 onChange={(e) => setFormData(prev => ({ ...prev, fullName: e.target.value }))}
                                 className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#e6244d]/20 focus:border-[#e6244d] transition-all"
@@ -111,12 +113,14 @@ export default function Register() {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">Email</label>
+                        <label htmlFor="register-email" className="block text-sm font-semibold text-gray-700 mb-2">Email</label>
                         <div className="relative">
-                            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" aria-hidden="true" />
                             <input
+                                id="register-email"
                                 required
                                 type="email"
+                                autoComplete="email"
                                 value={formData.email}
                                 onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
                                 className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#e6244d]/20 focus:border-[#e6244d] transition-all"
@@ -126,12 +130,14 @@ export default function Register() {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">Mot de passe</label>
+                        <label htmlFor="register-password" className="block text-sm font-semibold text-gray-700 mb-2">Mot de passe</label>
                         <div className="relative">
-                            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" aria-hidden="true" />
                             <input
+                                id="register-password"
                                 required
                                 type="password"
+                                autoComplete="new-password"
                                 value={formData.password}
                                 onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
                                 className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#e6244d]/20 focus:border-[#e6244d] transition-all"
@@ -145,7 +151,7 @@ export default function Register() {
                         disabled={loading}
                         className="w-full py-4 bg-[#e6244d] text-white font-bold rounded-xl hover:bg-[#c91d41] transition-all shadow-lg shadow-[#e6244d]/20 flex items-center justify-center gap-2 disabled:opacity-50"
                     >
-                        {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "S'inscrire"}
+                        {loading ? <Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" /> : "S'inscrire"}
                     </button>
                 </form>
 

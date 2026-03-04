@@ -290,10 +290,11 @@ export function MissionForm({ onClose, onSuccess, initialData }: MissionFormProp
                     {step === 2 && (
                         <div className="space-y-6 animate-in slide-in-from-right-4 duration-500">
                             <div>
-                                <label className="block text-sm font-bold text-gray-700 mb-2 px-1">Titre de votre mission</label>
+                                <label htmlFor="mission-title" className="block text-sm font-bold text-gray-700 mb-2 px-1">Titre de votre mission</label>
                                 <div className="relative group">
-                                    <Type className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-[#e6244d] transition-colors" />
+                                    <Type className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-[#e6244d] transition-colors" aria-hidden="true" />
                                     <input
+                                        id="mission-title"
                                         required
                                         type="text"
                                         name="title"
@@ -307,10 +308,11 @@ export function MissionForm({ onClose, onSuccess, initialData }: MissionFormProp
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-bold text-gray-700 mb-2 px-1">Pays</label>
+                                    <label htmlFor="mission-country" className="block text-sm font-bold text-gray-700 mb-2 px-1">Pays</label>
                                     <div className="relative group">
-                                        <Globe className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-[#e6244d] transition-colors" />
+                                        <Globe className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-[#e6244d] transition-colors" aria-hidden="true" />
                                         <input
+                                            id="mission-country"
                                             required
                                             type="text"
                                             name="country"
@@ -322,10 +324,11 @@ export function MissionForm({ onClose, onSuccess, initialData }: MissionFormProp
                                     </div>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-bold text-gray-700 mb-2 px-1">Ville</label>
+                                    <label htmlFor="mission-city" className="block text-sm font-bold text-gray-700 mb-2 px-1">Ville</label>
                                     <div className="relative group">
-                                        <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-[#e6244d] transition-colors" />
+                                        <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-[#e6244d] transition-colors" aria-hidden="true" />
                                         <input
+                                            id="mission-city"
                                             required
                                             type="text"
                                             name="city"
@@ -342,22 +345,26 @@ export function MissionForm({ onClose, onSuccess, initialData }: MissionFormProp
                                 <label className="block text-sm font-bold text-gray-700 mb-2 px-1">Dates estimées de départ et de retour</label>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="relative group">
-                                        <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-[#e6244d] transition-colors" />
+                                        <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-[#e6244d] transition-colors" aria-hidden="true" />
                                         <input
+                                            id="mission-start-date"
                                             required
                                             type="date"
                                             name="start_date"
+                                            aria-label="Date de départ estimée"
                                             value={formData.start_date}
                                             onChange={handleChange}
                                             className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-[#e6244d]/10 focus:border-[#e6244d] font-medium transition-all"
                                         />
                                     </div>
                                     <div className="relative group">
-                                        <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-[#e6244d] transition-colors" />
+                                        <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-[#e6244d] transition-colors" aria-hidden="true" />
                                         <input
+                                            id="mission-end-date"
                                             required
                                             type="date"
                                             name="end_date"
+                                            aria-label="Date de retour estimée"
                                             value={formData.end_date}
                                             onChange={handleChange}
                                             className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-[#e6244d]/10 focus:border-[#e6244d] font-medium transition-all"
@@ -371,10 +378,11 @@ export function MissionForm({ onClose, onSuccess, initialData }: MissionFormProp
                                     <span className="font-bold">💰 Besoin de financer votre mission ?</span><br />
                                     Créez votre cagnotte liée à Playlife grâce au lien suivant : <a href="https://www.leetchi.org/project/playlife" target="_blank" rel="noopener noreferrer" className="text-[#e6244d] underline hover:text-[#c91d41]">leetchi.org</a>
                                 </p>
-                                <label className="block text-sm font-bold text-gray-700 mb-2 px-1">Lien de votre cagnotte (optionnel)</label>
+                                <label htmlFor="mission-fundraising" className="block text-sm font-bold text-gray-700 mb-2 px-1">Lien de votre cagnotte (optionnel)</label>
                                 <div className="relative group">
-                                    <Link className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-[#e6244d] transition-colors" />
+                                    <Link className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-[#e6244d] transition-colors" aria-hidden="true" />
                                     <input
+                                        id="mission-fundraising"
                                         type="url"
                                         name="fundraising_url"
                                         value={formData.fundraising_url}
@@ -390,10 +398,11 @@ export function MissionForm({ onClose, onSuccess, initialData }: MissionFormProp
                     {step === 3 && (
                         <div className="space-y-6 animate-in slide-in-from-right-4 duration-500">
                             <div>
-                                <label className="block text-sm font-bold text-gray-700 mb-2 px-1">Description du projet</label>
+                                <label htmlFor="mission-description" className="block text-sm font-bold text-gray-700 mb-2 px-1">Description du projet</label>
                                 <div className="relative group">
-                                    <AlignLeft className="absolute left-4 top-4 w-5 h-5 text-gray-400 group-focus-within:text-[#e6244d] transition-colors" />
+                                    <AlignLeft className="absolute left-4 top-4 w-5 h-5 text-gray-400 group-focus-within:text-[#e6244d] transition-colors" aria-hidden="true" />
                                     <textarea
+                                        id="mission-description"
                                         required
                                         name="description"
                                         rows={5}
@@ -406,10 +415,11 @@ export function MissionForm({ onClose, onSuccess, initialData }: MissionFormProp
                             </div>
 
                             <div>
-                                <label className="block text-sm font-bold text-gray-700 mb-2 px-1">Image de couverture (max 5Mo)</label>
+                                <label htmlFor="mission-image" className="block text-sm font-bold text-gray-700 mb-2 px-1">Image de couverture (max 5Mo)</label>
                                 <div className="space-y-3">
                                     <label className="relative group cursor-pointer">
                                         <input
+                                            id="mission-image"
                                             type="file"
                                             accept="image/*"
                                             onChange={handleImageChange}

@@ -43,9 +43,12 @@ export function Sidebar({ collapsed, onToggle, mobileOpen, onMobileToggle }: Sid
       {/* Mobile Menu Button */}
       <button
         onClick={() => onMobileToggle(!mobileOpen)}
+        aria-label={mobileOpen ? 'Fermer le menu' : 'Ouvrir le menu'}
+        aria-expanded={mobileOpen}
+        aria-controls="sidebar"
         className="lg:hidden fixed top-4 left-4 z-50 w-10 h-10 bg-white border border-gray-200 rounded-lg flex items-center justify-center shadow-sm"
       >
-        {mobileOpen ? <X className="w-5 h-5 text-gray-600" /> : <Menu className="w-5 h-5 text-gray-600" />}
+        {mobileOpen ? <X className="w-5 h-5 text-gray-600" aria-hidden="true" /> : <Menu className="w-5 h-5 text-gray-600" aria-hidden="true" />}
       </button>
 
       {/* Overlay for mobile */}
@@ -53,11 +56,12 @@ export function Sidebar({ collapsed, onToggle, mobileOpen, onMobileToggle }: Sid
         <div
           className="lg:hidden fixed inset-0 bg-black/50 z-30"
           onClick={() => onMobileToggle(false)}
+          aria-hidden="true"
         />
       )}
 
       {/* Sidebar */}
-      <aside className={`fixed left-0 top-0 h-screen bg-white border-r border-gray-100 flex flex-col transition-all duration-300 z-40 
+      <aside id="sidebar" className={`fixed left-0 top-0 h-screen bg-white border-r border-gray-100 flex flex-col transition-all duration-300 z-40
         ${collapsed ? 'w-20' : 'w-64'}
         ${mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
@@ -74,17 +78,18 @@ export function Sidebar({ collapsed, onToggle, mobileOpen, onMobileToggle }: Sid
 
           <button
             onClick={() => onToggle(!collapsed)}
+            aria-label={collapsed ? 'Déplier la navigation' : 'Réduire la navigation'}
             className="hidden lg:flex absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-white border border-gray-200 rounded-full items-center justify-center hover:bg-gray-50 transition-colors z-10"
           >
             {collapsed ? (
-              <ChevronRight className="w-3 h-3 text-gray-600" />
+              <ChevronRight className="w-3 h-3 text-gray-600" aria-hidden="true" />
             ) : (
-              <ChevronLeft className="w-3 h-3 text-gray-600" />
+              <ChevronLeft className="w-3 h-3 text-gray-600" aria-hidden="true" />
             )}
           </button>
         </div>
 
-        <nav className="flex-1 p-4">
+        <nav className="flex-1 p-4" aria-label="Navigation principale">
           <ul className="space-y-1">
             {finalMenuItems.map((item, index) => {
               const isActive = location.pathname === item.path;
@@ -93,13 +98,14 @@ export function Sidebar({ collapsed, onToggle, mobileOpen, onMobileToggle }: Sid
                   <Link
                     to={item.path}
                     onClick={() => onMobileToggle(false)}
+                    aria-current={isActive ? 'page' : undefined}
+                    aria-label={collapsed ? item.label : undefined}
                     className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${isActive
                       ? 'bg-[#e6244d] text-white'
                       : 'text-gray-700 hover:bg-gray-50'
                       }`}
-                    title={collapsed ? item.label : undefined}
                   >
-                    <item.icon className="w-5 h-5 flex-shrink-0" />
+                    <item.icon className="w-5 h-5 flex-shrink-0" aria-hidden="true" />
                     {!collapsed && <span className="text-sm font-medium">{item.label}</span>}
                   </Link>
                 </li>
@@ -134,11 +140,12 @@ export function Sidebar({ collapsed, onToggle, mobileOpen, onMobileToggle }: Sid
           <Link
             to="/contact"
             onClick={() => onMobileToggle(false)}
+            aria-current={location.pathname === '/contact' ? 'page' : undefined}
+            aria-label={collapsed ? 'Contact' : undefined}
             className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${location.pathname === '/contact' ? 'bg-[#e6244d] text-white' : 'text-gray-700 hover:bg-gray-50'
               }`}
-            title={collapsed ? 'Contact' : undefined}
           >
-            <Mail className="w-5 h-5 flex-shrink-0" />
+            <Mail className="w-5 h-5 flex-shrink-0" aria-hidden="true" />
             {!collapsed && <span className="text-sm font-medium">Contact</span>}
           </Link>
           {user ? (
@@ -149,20 +156,20 @@ export function Sidebar({ collapsed, onToggle, mobileOpen, onMobileToggle }: Sid
                 e.stopPropagation();
                 signOut();
               }}
+              aria-label={collapsed ? 'Déconnexion' : undefined}
               className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-red-500 hover:bg-red-50 transition-colors mt-2 font-medium cursor-pointer relative z-50"
-              title={collapsed ? 'Déconnexion' : undefined}
             >
-              <LogOut className="w-5 h-5 flex-shrink-0" />
+              <LogOut className="w-5 h-5 flex-shrink-0" aria-hidden="true" />
               {!collapsed && <span>Déconnexion</span>}
             </button>
           ) : (
             <Link
               to="/login"
               onClick={() => onMobileToggle(false)}
+              aria-label={collapsed ? 'Connexion' : undefined}
               className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-[#e6244d] hover:bg-[#e6244d]/5 transition-colors mt-2 font-medium"
-              title={collapsed ? 'Connexion' : undefined}
             >
-              <LogIn className="w-5 h-5 flex-shrink-0" />
+              <LogIn className="w-5 h-5 flex-shrink-0" aria-hidden="true" />
               {!collapsed && <span>Connexion</span>}
             </Link>
           )}
