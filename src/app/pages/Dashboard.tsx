@@ -3,10 +3,11 @@ import { Link } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { Database } from '@/types/database.types';
 import { useAuth } from '@/contexts/AuthContext';
-import { Plus, Target, Users, Calendar, MapPin, ArrowRight, User, Upload, Edit2, Trash2, CheckCircle, Image as ImageIcon } from 'lucide-react';
+import { Plus, Target, Users, Calendar, MapPin, ArrowRight, User, Upload, Edit2, Trash2, CheckCircle, Image as ImageIcon, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { MissionForm } from '../components/MissionForm';
 
 type Mission = Database['public']['Tables']['missions']['Row'];
+type MissionMedia = Database['public']['Tables']['mission_media']['Row'];
 
 export default function Dashboard() {
     const { user, profile, loading: authLoading, refreshProfile } = useAuth();
@@ -17,11 +18,34 @@ export default function Dashboard() {
     const [uploadingAvatar, setUploadingAvatar] = useState(false);
     const [editingMission, setEditingMission] = useState<any>(null);
     const [showMediaUpload, setShowMediaUpload] = useState<string | null>(null);
+    const [missionMediaMap, setMissionMediaMap] = useState<Record<string, MissionMedia[]>>({});
+    const [slideshowData, setSlideshowData] = useState<{ photos: MissionMedia[]; title: string } | null>(null);
     const [editFormData, setEditFormData] = useState({
         full_name: '',
         avatar_url: '',
         user_type: ''
     });
+
+    const fetchMediaForMissions = useCallback(async (completedIds: string[]) => {
+        if (completedIds.length === 0) {
+            setMissionMediaMap({});
+            return;
+        }
+        const { data, error } = await (supabase
+            .from('mission_media') as any)
+            .select('*')
+            .in('mission_id', completedIds)
+            .order('created_at', { ascending: true });
+
+        if (!error && data) {
+            const map: Record<string, MissionMedia[]> = {};
+            (data as MissionMedia[]).forEach(media => {
+                if (!map[media.mission_id]) map[media.mission_id] = [];
+                map[media.mission_id].push(media);
+            });
+            setMissionMediaMap(map);
+        }
+    }, []);
 
     const fetchUserMissions = useCallback(async () => {
         if (!user) return;
@@ -36,10 +60,13 @@ export default function Dashboard() {
         if (error) {
             console.error('Error fetching user missions:', error);
         } else {
-            setMissions(data || []);
+            const ms: Mission[] = data || [];
+            setMissions(ms);
+            const completedIds = ms.filter(m => m.status === 'completed').map(m => m.id);
+            await fetchMediaForMissions(completedIds);
         }
         setLoading(false);
-    }, [user]);
+    }, [user, fetchMediaForMissions]);
 
     useEffect(() => {
         if (user) {
@@ -178,6 +205,126 @@ export default function Dashboard() {
             console.error('Error completing mission:', error);
             alert(`Erreur lors de la mise à jour: ${error.message}`);
         }
+    };
+
+    // Missions triées : en cours d'abord, terminées ensuite
+    const activeMissions = missions.filter(m => m.status !== 'completed');
+    const completedMissions = missions.filter(m => m.status === 'completed');
+
+    const renderMissionCard = (mission: Mission) => {
+        const missionPhotos = (missionMediaMap[mission.id] || []).filter(m => m.media_type === 'photo');
+        const isCompleted = mission.status === 'completed';
+        return (
+            <article key={mission.id} className="bg-gray-50 rounded-xl overflow-hidden hover:shadow-md transition-all group">
+                {mission.image_url && (
+                    <div className="h-36 overflow-hidden">
+                        <img
+                            src={mission.image_url}
+                            alt=""
+                            aria-hidden="true"
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                    </div>
+                )}
+                <div className="p-4">
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                        <h4 className="font-bold text-[#22081c] line-clamp-1 flex-1">{mission.title}</h4>
+                        {isCompleted && (
+                            <span className="px-2 py-0.5 bg-green-100 text-green-700 text-[10px] font-bold rounded-full shrink-0">
+                                TERMINÉE
+                            </span>
+                        )}
+                    </div>
+                    <p className="text-gray-600 text-sm line-clamp-2 mb-3">{mission.description}</p>
+                    <div className="flex flex-col gap-2 mb-3">
+                        <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2 text-xs text-gray-500 font-medium">
+                                <MapPin className="w-3.5 h-3.5 text-[#e6244d]" aria-hidden="true" />
+                                <span className="truncate">
+                                    {mission.city && mission.country ? `${mission.city}, ${mission.country}` : mission.location}
+                                </span>
+                            </div>
+                            <span className="text-[10px] font-bold uppercase tracking-tighter text-gray-300 shrink-0">
+                                {mission.mission_type === 'voyageur' ? 'Voyageur' : 'Animateur'}
+                            </span>
+                        </div>
+                        {(mission.start_date || mission.end_date) && (
+                            <div className="flex items-center gap-2 text-xs text-gray-400">
+                                <Calendar className="w-3.5 h-3.5" aria-hidden="true" />
+                                <span>
+                                    Du {mission.start_date ? new Date(mission.start_date).toLocaleDateString('fr-FR') : '?'} au {mission.end_date ? new Date(mission.end_date).toLocaleDateString('fr-FR') : '?'}
+                                </span>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Boutons d'action */}
+                    <div className="flex gap-2 pt-2 border-t border-gray-200">
+                        <button
+                            onClick={() => setEditingMission(mission)}
+                            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-xs font-medium hover:bg-gray-200 transition-colors"
+                            aria-label={`Modifier la mission : ${mission.title}`}
+                        >
+                            <Edit2 className="w-3.5 h-3.5" aria-hidden="true" />
+                            <span>Modifier</span>
+                        </button>
+                        {!isCompleted && (
+                            <button
+                                onClick={() => handleCompleteMission(mission.id)}
+                                className="flex-1 flex items-center justify-center gap-1 px-3 py-1.5 bg-green-50 text-green-700 rounded-lg text-xs font-medium hover:bg-green-100 transition-colors"
+                                aria-label={`Marquer la mission ${mission.title} comme terminée`}
+                            >
+                                <CheckCircle className="w-3.5 h-3.5" aria-hidden="true" />
+                                <span>Terminée</span>
+                            </button>
+                        )}
+                        {isCompleted && (
+                            <button
+                                onClick={() => setShowMediaUpload(mission.id)}
+                                className="flex-1 flex items-center justify-center gap-1 px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg text-xs font-medium hover:bg-blue-100 transition-colors"
+                                aria-label={`Ajouter des photos pour la mission : ${mission.title}`}
+                            >
+                                <ImageIcon className="w-3.5 h-3.5" aria-hidden="true" />
+                                <span>Médias</span>
+                            </button>
+                        )}
+                        <button
+                            onClick={() => handleDeleteMission(mission.id)}
+                            className="flex items-center justify-center gap-1 px-3 py-1.5 bg-red-50 text-red-700 rounded-lg text-xs font-medium hover:bg-red-100 transition-colors"
+                            aria-label={`Supprimer la mission : ${mission.title}`}
+                        >
+                            <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
+                        </button>
+                    </div>
+
+                    {/* Galerie photos pour missions terminées */}
+                    {isCompleted && missionPhotos.length > 0 && (
+                        <div className="mt-3 pt-3 border-t border-gray-200">
+                            <div className="flex gap-1.5 mb-2 flex-wrap" aria-hidden="true">
+                                {missionPhotos.slice(0, 3).map((photo) => (
+                                    <div key={photo.id} className="w-12 h-12 rounded-lg overflow-hidden bg-gray-200 shrink-0">
+                                        <img src={photo.media_url} alt="" className="w-full h-full object-cover" aria-hidden="true" />
+                                    </div>
+                                ))}
+                                {missionPhotos.length > 3 && (
+                                    <div className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center text-xs text-gray-500 font-medium shrink-0">
+                                        +{missionPhotos.length - 3}
+                                    </div>
+                                )}
+                            </div>
+                            <button
+                                onClick={() => setSlideshowData({ photos: missionPhotos, title: mission.title })}
+                                className="text-xs text-[#e6244d] hover:underline font-medium flex items-center gap-1"
+                                aria-label={`Voir le diaporama des ${missionPhotos.length} photo${missionPhotos.length > 1 ? 's' : ''} de la mission ${mission.title}`}
+                            >
+                                <ImageIcon className="w-3.5 h-3.5" aria-hidden="true" />
+                                Consulter les {missionPhotos.length} photo{missionPhotos.length > 1 ? 's' : ''}
+                            </button>
+                        </div>
+                    )}
+                </div>
+            </article>
+        );
     };
 
     if (authLoading) {
@@ -375,9 +522,9 @@ export default function Dashboard() {
                 </div>
             </div>
 
-            {/* User Missions Grid */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+            {/* Mes Missions */}
+            <div className="space-y-6">
+                <div className="flex items-center justify-between">
                     <div>
                         <h2 className="text-xl font-bold text-[#22081c]">Mes Missions</h2>
                         <p className="text-gray-500 text-sm mt-1">Gérez et suivez vos missions humanitaires</p>
@@ -385,107 +532,54 @@ export default function Dashboard() {
                     <Link
                         to="/missions"
                         className="text-[#e6244d] hover:text-[#c91d41] text-sm font-medium flex items-center gap-1"
+                        aria-label="Voir toutes les missions"
                     >
-                        Voir toutes <ArrowRight className="w-4 h-4" />
+                        Voir toutes <ArrowRight className="w-4 h-4" aria-hidden="true" />
                     </Link>
                 </div>
 
                 {loading ? (
-                    <div className="flex justify-center p-12">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#e6244d]"></div>
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 flex justify-center p-12">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#e6244d]" role="status" aria-label="Chargement des missions"></div>
                     </div>
                 ) : missions.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
-                        {missions.slice(0, 6).map((mission) => (
-                            <div
-                                key={mission.id}
-                                className="bg-gray-50 rounded-xl overflow-hidden hover:shadow-md transition-all group relative"
-                            >
-                                {mission.image_url && (
-                                    <div className="h-36 overflow-hidden">
-                                        <img
-                                            src={mission.image_url}
-                                            alt={mission.title}
-                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                                        />
-                                    </div>
-                                )}
-                                <div className="p-4">
-                                    <div className="flex items-start justify-between gap-2 mb-2">
-                                        <h3 className="font-bold text-[#22081c] line-clamp-1 flex-1">{mission.title}</h3>
-                                        {mission.status === 'completed' && (
-                                            <span className="px-2 py-0.5 bg-green-100 text-green-700 text-[10px] font-bold rounded-full shrink-0">
-                                                TERMINÉE
-                                            </span>
-                                        )}
-                                    </div>
-                                    <p className="text-gray-600 text-sm line-clamp-2 mb-3">{mission.description}</p>
-                                    <div className="flex flex-col gap-2 mb-3">
-                                        <div className="flex items-center justify-between gap-2">
-                                            <div className="flex items-center gap-2 text-xs text-gray-500 font-medium">
-                                                <MapPin className="w-3.5 h-3.5 text-[#e6244d]" />
-                                                <span className="truncate">{mission.city && mission.country ? `${mission.city}, ${mission.country}` : mission.location}</span>
-                                            </div>
-                                            <span className="text-[10px] font-bold uppercase tracking-tighter text-gray-300 shrink-0">
-                                                {mission.mission_type === 'voyageur' ? 'Voyageur' : 'Animateur'}
-                                            </span>
-                                        </div>
-                                        {(mission.start_date || mission.end_date) && (
-                                            <div className="flex items-center gap-2 text-xs text-gray-400">
-                                                <Calendar className="w-3.5 h-3.5" />
-                                                <span>
-                                                    Du {mission.start_date ? new Date(mission.start_date).toLocaleDateString() : '?'} au {mission.end_date ? new Date(mission.end_date).toLocaleDateString() : '?'}
-                                                </span>
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {/* Action buttons */}
-                                    <div className="flex gap-2 pt-2 border-t border-gray-200">
-                                        <button
-                                            onClick={() => setEditingMission(mission)}
-                                            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-xs font-medium hover:bg-gray-200 transition-colors"
-                                            title="Modifier"
-                                        >
-                                            <Edit2 className="w-3.5 h-3.5" />
-                                            <span>Modifier</span>
-                                        </button>
-                                        {mission.status !== 'completed' && (
-                                            <button
-                                                onClick={() => handleCompleteMission(mission.id)}
-                                                className="flex-1 flex items-center justify-center gap-1 px-3 py-1.5 bg-green-50 text-green-700 rounded-lg text-xs font-medium hover:bg-green-100 transition-colors"
-                                                title="Marquer comme terminée"
-                                            >
-                                                <CheckCircle className="w-3.5 h-3.5" />
-                                                <span>Terminée</span>
-                                            </button>
-                                        )}
-                                        {mission.status === 'completed' && (
-                                            <button
-                                                onClick={() => setShowMediaUpload(mission.id)}
-                                                className="flex-1 flex items-center justify-center gap-1 px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg text-xs font-medium hover:bg-blue-100 transition-colors"
-                                                title="Ajouter des photos/vidéos"
-                                            >
-                                                <ImageIcon className="w-3.5 h-3.5" />
-                                                <span>Médias</span>
-                                            </button>
-                                        )}
-                                        <button
-                                            onClick={() => handleDeleteMission(mission.id)}
-                                            className="flex items-center justify-center gap-1 px-3 py-1.5 bg-red-50 text-red-700 rounded-lg text-xs font-medium hover:bg-red-100 transition-colors"
-                                            title="Supprimer"
-                                        >
-                                            <Trash2 className="w-3.5 h-3.5" />
-                                        </button>
-                                    </div>
+                    <>
+                        {/* Missions en cours */}
+                        {activeMissions.length > 0 && (
+                            <section aria-labelledby="active-missions-heading" className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                                <div className="p-5 border-b border-gray-100">
+                                    <h3 id="active-missions-heading" className="text-base font-bold text-[#22081c] flex items-center gap-2">
+                                        <span className="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block" aria-hidden="true"></span>
+                                        Missions en cours
+                                        <span className="text-sm font-normal text-gray-400">({activeMissions.length})</span>
+                                    </h3>
                                 </div>
-                            </div>
-                        ))}
-                    </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
+                                    {activeMissions.map(mission => renderMissionCard(mission))}
+                                </div>
+                            </section>
+                        )}
+
+                        {/* Missions terminées */}
+                        {completedMissions.length > 0 && (
+                            <section aria-labelledby="completed-missions-heading" className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                                <div className="p-5 border-b border-gray-100">
+                                    <h3 id="completed-missions-heading" className="text-base font-bold text-[#22081c] flex items-center gap-2">
+                                        <CheckCircle className="w-4 h-4 text-green-500" aria-hidden="true" />
+                                        Missions terminées
+                                        <span className="text-sm font-normal text-gray-400">({completedMissions.length})</span>
+                                    </h3>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
+                                    {completedMissions.map(mission => renderMissionCard(mission))}
+                                </div>
+                            </section>
+                        )}
+                    </>
                 ) : (
-                    <div className="p-12 text-center">
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-12 text-center">
                         <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <Target className="w-8 h-8 text-gray-400" />
+                            <Target className="w-8 h-8 text-gray-400" aria-hidden="true" />
                         </div>
                         <h3 className="text-lg font-semibold text-[#22081c] mb-2">Aucune mission</h3>
                         <p className="text-gray-500 mb-6">Vous n'avez pas encore créé de mission.</p>
@@ -493,7 +587,7 @@ export default function Dashboard() {
                             onClick={() => setIsFormOpen(true)}
                             className="inline-flex items-center gap-2 bg-[#e6244d] text-white px-6 py-3 rounded-xl font-medium hover:bg-[#c91d41] transition-colors"
                         >
-                            <Plus className="w-5 h-5" />
+                            <Plus className="w-5 h-5" aria-hidden="true" />
                             Créer ma première mission
                         </button>
                     </div>
@@ -524,7 +618,20 @@ export default function Dashboard() {
             {showMediaUpload && (
                 <MediaUploadModal
                     missionId={showMediaUpload}
-                    onClose={() => setShowMediaUpload(null)}
+                    onClose={() => {
+                        setShowMediaUpload(null);
+                        const completedIds = missions.filter(m => m.status === 'completed').map(m => m.id);
+                        fetchMediaForMissions(completedIds);
+                    }}
+                />
+            )}
+
+            {/* Diaporama photos */}
+            {slideshowData && (
+                <PhotoSlideshowModal
+                    photos={slideshowData.photos}
+                    title={slideshowData.title}
+                    onClose={() => setSlideshowData(null)}
                 />
             )}
         </div>
@@ -612,6 +719,13 @@ function MediaUploadModal({ missionId, onClose }: { missionId: string; onClose: 
                 </div>
 
                 <div className="space-y-4">
+                    {/* Texte de consentement */}
+                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-4" role="note">
+                        <p className="text-xs text-amber-800 leading-relaxed">
+                            <strong>Engagement avant publication :</strong> En publiant ces photos, je confirme disposer des droits nécessaires et avoir l'accord des personnes photographiées lorsque cela est requis. Je m'engage à ne publier aucun contenu raciste, discriminatoire, violent, humiliant ou illégal. Les images doivent respecter la dignité des personnes, notamment des enfants. J'autorise Playlife à utiliser ces photos pour la communication de l'association.
+                        </p>
+                    </div>
+
                     <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center">
                         <label className="cursor-pointer">
                             <input
@@ -659,6 +773,102 @@ function MediaUploadModal({ missionId, onClose }: { missionId: string; onClose: 
                     </button>
                 </div>
             </div>
+        </div>
+    );
+}
+
+// Composant diaporama photos de mission
+function PhotoSlideshowModal({ photos, title, onClose }: { photos: MissionMedia[]; title: string; onClose: () => void }) {
+    const [currentIndex, setCurrentIndex] = useState(0);
+
+    const goNext = useCallback(() => setCurrentIndex(i => (i + 1) % photos.length), [photos.length]);
+    const goPrev = useCallback(() => setCurrentIndex(i => (i - 1 + photos.length) % photos.length), [photos.length]);
+
+    useEffect(() => {
+        const handleKey = (e: KeyboardEvent) => {
+            if (e.key === 'ArrowRight') goNext();
+            else if (e.key === 'ArrowLeft') goPrev();
+            else if (e.key === 'Escape') onClose();
+        };
+        window.addEventListener('keydown', handleKey);
+        return () => window.removeEventListener('keydown', handleKey);
+    }, [goNext, goPrev, onClose]);
+
+    const current = photos[currentIndex];
+
+    return (
+        <div
+            className="fixed inset-0 bg-black/90 flex flex-col items-center justify-center z-50 p-4"
+            role="dialog"
+            aria-modal="true"
+            aria-label={`Diaporama photos – ${title}`}
+        >
+            {/* En-tête */}
+            <div className="w-full max-w-4xl flex items-center justify-between mb-4">
+                <p className="text-white font-semibold text-lg truncate">{title}</p>
+                <div className="flex items-center gap-3">
+                    <span className="text-white/60 text-sm" aria-live="polite" aria-atomic="true">
+                        {currentIndex + 1} / {photos.length}
+                    </span>
+                    <button
+                        onClick={onClose}
+                        className="text-white/70 hover:text-white transition-colors p-1 rounded-lg focus:outline-none focus:ring-2 focus:ring-white"
+                        aria-label="Fermer le diaporama"
+                    >
+                        <X className="w-6 h-6" aria-hidden="true" />
+                    </button>
+                </div>
+            </div>
+
+            {/* Image principale */}
+            <div className="relative w-full max-w-4xl flex items-center justify-center">
+                {photos.length > 1 && (
+                    <button
+                        onClick={goPrev}
+                        className="absolute left-0 z-10 p-2 bg-black/40 hover:bg-black/60 rounded-full text-white transition-colors focus:outline-none focus:ring-2 focus:ring-white"
+                        aria-label="Photo précédente"
+                    >
+                        <ChevronLeft className="w-6 h-6" aria-hidden="true" />
+                    </button>
+                )}
+
+                <img
+                    src={current.media_url}
+                    alt={current.caption || `Photo ${currentIndex + 1} de la mission ${title}`}
+                    className="max-h-[65vh] max-w-full object-contain rounded-lg"
+                />
+
+                {photos.length > 1 && (
+                    <button
+                        onClick={goNext}
+                        className="absolute right-0 z-10 p-2 bg-black/40 hover:bg-black/60 rounded-full text-white transition-colors focus:outline-none focus:ring-2 focus:ring-white"
+                        aria-label="Photo suivante"
+                    >
+                        <ChevronRight className="w-6 h-6" aria-hidden="true" />
+                    </button>
+                )}
+            </div>
+
+            {/* Légende */}
+            {current.caption && (
+                <p className="text-white/70 text-sm mt-3 text-center max-w-2xl">{current.caption}</p>
+            )}
+
+            {/* Navigation par points */}
+            {photos.length > 1 && (
+                <div className="flex gap-2 mt-4" role="tablist" aria-label="Navigation entre les photos">
+                    {photos.map((_, i) => (
+                        <button
+                            key={i}
+                            onClick={() => setCurrentIndex(i)}
+                            className={`h-2 rounded-full transition-all focus:outline-none focus:ring-2 focus:ring-white ${i === currentIndex ? 'bg-white w-4' : 'bg-white/40 hover:bg-white/70 w-2'}`}
+                            role="tab"
+                            aria-selected={i === currentIndex}
+                            aria-label={`Photo ${i + 1}`}
+                        />
+                    ))}
+                </div>
+            )}
         </div>
     );
 }
