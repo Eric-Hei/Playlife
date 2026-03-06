@@ -113,20 +113,41 @@ ALTER TABLE public.mission_media ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.site_config ENABLE ROW LEVEL SECURITY;
 
 -- ============================================
+-- ÉTAPE 3b : Fonction helper SECURITY DEFINER
+-- Évite la récursion RLS lors de l'accès à profiles
+-- ============================================
+
+CREATE OR REPLACE FUNCTION public.auth_is_super_admin()
+RETURNS BOOLEAN
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+    SELECT COALESCE(
+        (SELECT is_super_admin FROM public.profiles WHERE id = auth.uid()),
+        false
+    );
+$$;
+
+COMMENT ON FUNCTION public.auth_is_super_admin() IS
+    'Vérifie si l''utilisateur courant est super admin. SECURITY DEFINER pour éviter la récursion RLS.';
+
+-- ============================================
 -- ÉTAPE 4 : POLITIQUES RLS - PROFILES (5 politiques)
 -- ============================================
 
--- 1. Lecture (utilisateurs authentifiés)
-CREATE POLICY "Authenticated users can view all profiles"
+-- 1. Lecture : chaque utilisateur voit uniquement son propre profil
+CREATE POLICY "Users can view own profile"
 ON profiles FOR SELECT
 TO authenticated
-USING (true);
+USING (auth.uid() = id);
 
--- 2. Lecture (utilisateurs anonymes)
-CREATE POLICY "Anonymous users can view public profile info"
+-- 2. Lecture : super admins voient tous les profils (sans récursion)
+CREATE POLICY "Super admins can view all profiles"
 ON profiles FOR SELECT
-TO anon
-USING (true);
+TO authenticated
+USING (public.auth_is_super_admin());
 
 -- 3. Création (son propre profil)
 CREATE POLICY "Users can insert their own profile"
@@ -135,36 +156,65 @@ TO authenticated
 WITH CHECK (auth.uid() = id);
 
 -- 4. Modification (son propre profil)
--- Note: La clause WITH CHECK simple suffit car le code frontend n'envoie jamais is_super_admin.
--- Une sous-requête sur la même table avec RLS causait une récursion PostgreSQL et bloquait les UPDATE.
 CREATE POLICY "Users can update their own profile"
 ON profiles FOR UPDATE
 TO authenticated
 USING (auth.uid() = id)
 WITH CHECK (auth.uid() = id);
 
--- 5. Modification (super admins peuvent tout modifier)
+-- 5. Modification (super admins peuvent tout modifier, sans récursion)
 CREATE POLICY "Super admins can update all profiles"
 ON profiles FOR UPDATE
 TO authenticated
-USING (
-    EXISTS (
-        SELECT 1 FROM profiles
-        WHERE profiles.id = auth.uid()
-        AND profiles.is_super_admin = true
-    )
-)
+USING (public.auth_is_super_admin())
 WITH CHECK (true);
+
+-- ============================================
+-- ÉTAPE 4b : TRIGGER anti-promotion is_super_admin
+-- ============================================
+
+CREATE OR REPLACE FUNCTION public.prevent_super_admin_self_promotion()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+    IF NEW.is_super_admin IS DISTINCT FROM OLD.is_super_admin THEN
+        IF NOT public.auth_is_super_admin() THEN
+            RAISE EXCEPTION 'Permission refusée : modification de is_super_admin non autorisée.';
+        END IF;
+    END IF;
+    RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_prevent_super_admin_promotion ON public.profiles;
+
+CREATE TRIGGER trg_prevent_super_admin_promotion
+BEFORE UPDATE ON public.profiles
+FOR EACH ROW
+EXECUTE FUNCTION public.prevent_super_admin_self_promotion();
 
 -- ============================================
 -- ÉTAPE 5 : POLITIQUES RLS - MISSIONS (6 politiques)
 -- ============================================
 
--- 1. Lecture publique
-CREATE POLICY "Missions are viewable by everyone"
+-- 1a. Lecture publique : uniquement les missions visibles (modérées)
+CREATE POLICY "Public can view visible missions"
 ON missions FOR SELECT
-TO public
-USING (true);
+TO anon
+USING (visible = true);
+
+-- 1b. Lecture authentifiée : missions visibles + les siennes + tout si super admin
+CREATE POLICY "Authenticated can view visible or own missions"
+ON missions FOR SELECT
+TO authenticated
+USING (
+    visible = true
+    OR created_by = auth.uid()
+    OR public.auth_is_super_admin()
+);
 
 -- 2. Création (utilisateurs authentifiés uniquement)
 CREATE POLICY "Authenticated users can create missions"
@@ -338,9 +388,7 @@ ON CONFLICT (key) DO NOTHING;
 -- ÉTAPE 8 : VUE PUBLIC_PROFILES (sans données sensibles)
 -- ============================================
 
-CREATE VIEW public_profiles
-WITH (security_invoker = true)
-AS
+CREATE VIEW public.public_profiles AS
 SELECT
     id,
     full_name,
@@ -349,11 +397,13 @@ SELECT
     user_type,
     created_at,
     updated_at
-FROM profiles;
+FROM public.profiles;
 
-GRANT SELECT ON public_profiles TO anon, authenticated;
+GRANT SELECT ON public.public_profiles TO anon, authenticated;
 
-COMMENT ON VIEW public_profiles IS 'Vue publique des profils sans données sensibles (email, is_super_admin) - SECURITY INVOKER';
+COMMENT ON VIEW public.public_profiles IS
+    'Vue publique des profils (sans email ni is_super_admin). '
+    'Tourne avec les droits du propriétaire (postgres = BYPASSRLS).';
 
 -- ============================================
 -- ÉTAPE 9 : STORAGE BUCKETS
@@ -522,7 +572,7 @@ BEGIN
     RAISE NOTICE '========================================';
     RAISE NOTICE 'MIGRATION PLAYLIFE v0.0.3 - RÉSULTAT';
     RAISE NOTICE '========================================';
-    RAISE NOTICE 'MISSIONS      : % politiques (attendu: 6)', missions_count;
+    RAISE NOTICE 'MISSIONS      : % politiques (attendu: 7)', missions_count;
     RAISE NOTICE 'PROFILES      : % politiques (attendu: 5)', profiles_count;
     RAISE NOTICE 'STRUCTURES    : % politiques (attendu: 6)', structures_count;
     RAISE NOTICE 'SITE_CONFIG   : % politiques (attendu: 2)', site_config_count;
@@ -531,7 +581,7 @@ BEGIN
     RAISE NOTICE 'SLIDESHOW     : % public (attendu: 1)', slideshow_exists;
     RAISE NOTICE '========================================';
 
-    IF missions_count = 6 AND profiles_count = 5 AND structures_count >= 6
+    IF missions_count = 7 AND profiles_count = 5 AND structures_count >= 6
        AND site_config_count >= 2 AND view_count = 1
        AND bucket_count = 4 AND slideshow_exists = 1 THEN
         RAISE NOTICE '🎉 SUCCÈS ! Toutes les tables, politiques et buckets sont créés.';
