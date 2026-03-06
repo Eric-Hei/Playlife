@@ -207,6 +207,37 @@ export default function Dashboard() {
         }
     };
 
+    const handleDeletePhoto = async (photo: MissionMedia) => {
+        if (!confirm('Supprimer cette photo définitivement ? Cette action est irréversible.')) return;
+        try {
+            const { error: dbError } = await (supabase.from('mission_media') as any)
+                .delete()
+                .eq('id', photo.id);
+            if (dbError) throw dbError;
+
+            // Suppression dans le storage
+            try {
+                const urlObj = new URL(photo.media_url);
+                const storagePath = urlObj.pathname.split('/mission-media/')[1];
+                if (storagePath) await supabase.storage.from('mission-media').remove([storagePath]);
+            } catch (_) { /* URL invalide, on ignore */ }
+
+            // Mise à jour du state local
+            setMissionMediaMap(prev => {
+                const newMap: Record<string, MissionMedia[]> = {};
+                for (const key in prev) newMap[key] = prev[key].filter(p => p.id !== photo.id);
+                return newMap;
+            });
+            setSlideshowData(prev => {
+                if (!prev) return null;
+                const newPhotos = prev.photos.filter(p => p.id !== photo.id);
+                return newPhotos.length === 0 ? null : { ...prev, photos: newPhotos };
+            });
+        } catch (error: any) {
+            alert(`Erreur lors de la suppression : ${error.message}`);
+        }
+    };
+
     // Missions triées : en cours d'abord, terminées ensuite
     const activeMissions = missions.filter(m => m.status !== 'completed');
     const completedMissions = missions.filter(m => m.status === 'completed');
@@ -632,6 +663,7 @@ export default function Dashboard() {
                     photos={slideshowData.photos}
                     title={slideshowData.title}
                     onClose={() => setSlideshowData(null)}
+                    onDelete={handleDeletePhoto}
                 />
             )}
         </div>
@@ -778,7 +810,12 @@ function MediaUploadModal({ missionId, onClose }: { missionId: string; onClose: 
 }
 
 // Composant diaporama photos de mission
-function PhotoSlideshowModal({ photos, title, onClose }: { photos: MissionMedia[]; title: string; onClose: () => void }) {
+function PhotoSlideshowModal({ photos, title, onClose, onDelete }: {
+    photos: MissionMedia[];
+    title: string;
+    onClose: () => void;
+    onDelete?: (photo: MissionMedia) => Promise<void>;
+}) {
     const [currentIndex, setCurrentIndex] = useState(0);
 
     const goNext = useCallback(() => setCurrentIndex(i => (i + 1) % photos.length), [photos.length]);
@@ -810,6 +847,15 @@ function PhotoSlideshowModal({ photos, title, onClose }: { photos: MissionMedia[
                     <span className="text-white/60 text-sm" aria-live="polite" aria-atomic="true">
                         {currentIndex + 1} / {photos.length}
                     </span>
+                    {onDelete && (
+                        <button
+                            onClick={() => onDelete(current)}
+                            className="text-red-400 hover:text-red-300 transition-colors p-1 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-400"
+                            aria-label="Supprimer cette photo"
+                        >
+                            <Trash2 className="w-5 h-5" aria-hidden="true" />
+                        </button>
+                    )}
                     <button
                         onClick={onClose}
                         className="text-white/70 hover:text-white transition-colors p-1 rounded-lg focus:outline-none focus:ring-2 focus:ring-white"
