@@ -15,6 +15,7 @@ import Impact from './pages/Impact';
 import { CtaContact } from './components/CtaContact';
 import { AuthProvider } from '@/contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
+import AdminRoute from './components/AdminRoute';
 
 function AppContent() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -40,6 +41,8 @@ function AppContent() {
             <Route path="/ressources" element={<Ressources />} />
             <Route element={<ProtectedRoute />}>
               <Route path="/dashboard" element={<Dashboard />} />
+            </Route>
+            <Route element={<AdminRoute />}>
               <Route path="/settings" element={<Settings />} />
             </Route>
             <Route path="/login" element={<Login />} />

@@ -1,5 +1,4 @@
 import { useEffect, useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { Database } from '@/types/database.types';
@@ -12,7 +11,6 @@ type Mission = Database['public']['Tables']['missions']['Row'];
 
 export default function Settings() {
     const { profile } = useAuth();
-    const navigate = useNavigate();
     const [pendingStructures, setPendingStructures] = useState<any[]>([]);
     const [allMissions, setAllMissions] = useState<any[]>([]);
     const [impactMetrics, setImpactMetrics] = useState({
@@ -25,16 +23,6 @@ export default function Settings() {
     const [loading, setLoading] = useState(true);
     const [editingMission, setEditingMission] = useState<string | null>(null);
     const [fundraisingUrl, setFundraisingUrl] = useState('');
-
-    // Rediriger si pas super admin
-    useEffect(() => {
-        if (!profile) return;
-
-        if (!profile.is_super_admin) {
-            alert('Accès refusé : vous devez être super administrateur.');
-            navigate('/');
-        }
-    }, [profile, navigate]);
 
     useEffect(() => {
         if (profile?.is_super_admin) {
@@ -299,10 +287,6 @@ export default function Settings() {
         (missionsPage - 1) * MISSIONS_PER_PAGE,
         missionsPage * MISSIONS_PER_PAGE
     );
-
-    if (!profile?.is_super_admin) {
-        return null;
-    }
 
     return (
         <>
