@@ -35,23 +35,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             if (error) {
                 // PGRST116 means 0 rows returned for .single()
                 if (error.code === 'PGRST116') {
-                    console.log('[AuthContext] Profile not found, creating a default one...');
+                    // Le trigger handle_new_user() crée le profil à l'inscription.
+                    // Ce fallback couvre les anciens comptes sans profil.
+                    console.log('[AuthContext] Profile not found, creating a default one via upsert...');
                     const { data: userData } = await supabase.auth.getUser();
                     const email = userData?.user?.email;
+                    const meta = userData?.user?.user_metadata;
 
-                    const { data: newProfile, error: insertError } = await (supabase
+                    const { data: newProfile, error: upsertError } = await (supabase
                         .from('profiles') as any)
-                        .insert({
+                        .upsert({
                             id: userId,
-                            full_name: email?.split('@')[0] || 'Utilisateur',
+                            full_name: meta?.full_name || email?.split('@')[0] || 'Utilisateur',
                             email: email,
-                            role: 'voyageur'
-                        })
+                            role: meta?.role || 'voyageur'
+                        }, { onConflict: 'id' })
                         .select()
                         .single();
 
-                    if (insertError) {
-                        console.error('[AuthContext] Error creating default profile:', insertError);
+                    if (upsertError) {
+                        console.error('[AuthContext] Error creating default profile:', upsertError);
                         setProfile(null);
                     } else {
                         console.log('[AuthContext] Default profile created:', newProfile);

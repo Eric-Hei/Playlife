@@ -1,6 +1,6 @@
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useState } from 'react';
-import { UserPlus, Mail, Lock, User, Loader2, Globe } from 'lucide-react';
+import { UserPlus, Mail, Lock, User, Loader2, Globe, CheckCircle } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
 export default function Register() {
@@ -14,6 +14,7 @@ export default function Register() {
         role: 'voyageur' as 'voyageur' | 'animateur'
     });
     const [error, setError] = useState<string | null>(null);
+    const [registeredEmail, setRegisteredEmail] = useState<string | null>(null);
 
     const handleRegister = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -21,36 +22,63 @@ export default function Register() {
         setError(null);
 
         try {
-            // 1. Sign Up User
+            // 1. Sign Up — on passe full_name et role dans les métadonnées
+            // Le trigger handle_new_user() crée le profil côté serveur (sans RLS)
             const { data, error: signUpError } = await supabase.auth.signUp({
                 email: formData.email,
                 password: formData.password,
+                options: {
+                    data: {
+                        full_name: formData.fullName,
+                        role: formData.role,
+                    }
+                }
             });
 
             if (signUpError) throw signUpError;
 
-            if (data.user) {
-                // 2. Create Profile in public.profiles
-                // Note: Using any here temporarily to bypass the transition state of types
-                const { error: profileError } = await (supabase
-                    .from('profiles') as any)
-                    .insert({
-                        id: data.user.id,
-                        full_name: formData.fullName,
-                        email: formData.email,
-                        role: formData.role,
-                    });
-
-                if (profileError) throw profileError;
+            // Si session === null, la confirmation par email est activée → afficher le message
+            // Si session existe, l'utilisateur est directement connecté → rediriger
+            if (!data.session) {
+                setRegisteredEmail(formData.email);
+            } else {
+                const createParam = searchParams.get('create');
+                navigate(createParam === 'true' ? '/missions?create=true' : '/missions');
             }
-
-            const createParam = searchParams.get('create');
-            navigate(createParam === 'true' ? '/missions?create=true' : '/missions');
         } catch (error: any) {
             setError(error.message);
+        } finally {
             setLoading(false);
         }
     };
+
+    // Écran de confirmation affiché après une inscription réussie
+    if (registeredEmail) {
+        return (
+            <div className="min-h-screen flex items-start justify-center bg-gray-50 px-4 md:px-8 py-4 md:py-6 border-t border-gray-100">
+                <div className="w-full max-w-md bg-white rounded-3xl shadow-xl p-8 border border-gray-100 text-center" role="alert" aria-live="polite">
+                    <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-2xl mb-4">
+                        <CheckCircle className="w-8 h-8 text-green-600" aria-hidden="true" />
+                    </div>
+                    <h1 className="text-2xl font-bold text-[#22081c] mb-2">Inscription réussie !</h1>
+                    <p className="text-gray-600 mb-2">
+                        Un email de confirmation a été envoyé à :
+                    </p>
+                    <p className="font-bold text-[#22081c] mb-6 break-all">{registeredEmail}</p>
+                    <p className="text-gray-500 text-sm mb-8">
+                        Cliquez sur le lien dans l'email pour activer votre compte,
+                        puis connectez-vous pour accéder à Playlife.
+                    </p>
+                    <button
+                        onClick={() => navigate('/login')}
+                        className="w-full py-4 bg-[#e6244d] text-white font-bold rounded-xl hover:bg-[#c91d41] transition-all shadow-lg shadow-[#e6244d]/20"
+                    >
+                        Aller à la page de connexion
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen flex items-start justify-center bg-gray-50 px-4 md:px-8 py-4 md:py-6 border-t border-gray-100">
@@ -64,7 +92,7 @@ export default function Register() {
                 </div>
 
                 {error && (
-                    <div className="mb-6 p-4 bg-red-50 border border-red-100 text-red-600 text-sm rounded-xl">
+                    <div className="mb-6 p-4 bg-red-50 border border-red-100 text-red-600 text-sm rounded-xl" role="alert">
                         {error}
                     </div>
                 )}

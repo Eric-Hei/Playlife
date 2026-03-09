@@ -7,7 +7,47 @@
 -- ============================================================
 
 -- ============================================================
--- ÉTAPE 0 : Fonction helper SECURITY DEFINER
+-- ÉTAPE 0a : Trigger handle_new_user
+-- Crée automatiquement le profil lors de l'inscription
+-- (exécuté par postgres = BYPASSRLS, évite le problème de session)
+-- ============================================================
+
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+    INSERT INTO public.profiles (id, full_name, email, role)
+    VALUES (
+        NEW.id,
+        COALESCE(
+            NEW.raw_user_meta_data->>'full_name',
+            split_part(NEW.email, '@', 1)
+        ),
+        NEW.email,
+        COALESCE(NEW.raw_user_meta_data->>'role', 'voyageur')
+    )
+    ON CONFLICT (id) DO NOTHING;
+    RETURN NEW;
+END;
+$$;
+
+COMMENT ON FUNCTION public.handle_new_user() IS
+    'Crée automatiquement un profil public quand un utilisateur s''inscrit. '
+    'Lit full_name et role depuis raw_user_meta_data (passés lors du signUp). '
+    'ON CONFLICT DO NOTHING pour être idempotent.';
+
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+
+CREATE TRIGGER on_auth_user_created
+AFTER INSERT ON auth.users
+FOR EACH ROW
+EXECUTE FUNCTION public.handle_new_user();
+
+-- ============================================================
+-- ÉTAPE 0b : Fonction helper SECURITY DEFINER
 -- Évite la récursion RLS lors de l'accès à la table profiles
 -- ============================================================
 
