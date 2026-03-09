@@ -123,10 +123,13 @@ export function MissionForm({ onClose, onSuccess, initialData }: MissionFormProp
         setUploadingImage(true);
 
         try {
-            // Créer un nom de fichier unique
-            const fileExt = file.name.split('.').pop();
-            const fileName = `${user?.id}-${Date.now()}.${fileExt}`;
-            const filePath = `mission-covers/${fileName}`;
+            if (!user?.id) {
+                throw new Error('Utilisateur non authentifié');
+            }
+
+            // Stocker l'image dans un dossier propriétaire pour faire respecter les policies Storage
+            const safeFileName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+            const filePath = `${user.id}/${Date.now()}_${safeFileName}`;
 
             // Upload vers Supabase Storage
             const { error: uploadError } = await supabase.storage

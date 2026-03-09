@@ -2,7 +2,7 @@
 -- SECURITY HARDENING - PLAYLIFE
 -- ============================================================
 -- À exécuter sur une instance EXISTANTE (après MIGRATION_COMPLETE_SECURISEE.sql)
--- Priorités : P1 (profiles), P2 (missions), P3 (trigger anti-promotion)
+-- Priorités : P1 (profiles), P2 (missions), P3 (storage), P4 (trigger anti-promotion)
 -- Date : 2026-03-06
 -- ============================================================
 
@@ -79,6 +79,10 @@ DROP POLICY IF EXISTS "Super admins can update all profiles" ON public.profiles;
 -- ÉTAPE 1b : PROFILES — Politiques restreintes
 -- ============================================================
 
+DROP POLICY IF EXISTS "Users can view own profile" ON public.profiles;
+DROP POLICY IF EXISTS "Super admins can view all profiles" ON public.profiles;
+DROP POLICY IF EXISTS "Super admins can update all profiles" ON public.profiles;
+
 -- Chaque utilisateur ne voit que son propre profil
 CREATE POLICY "Users can view own profile"
 ON public.profiles FOR SELECT
@@ -132,6 +136,9 @@ DROP POLICY IF EXISTS "Missions are viewable by everyone" ON public.missions;
 -- ÉTAPE 2b : MISSIONS — Politiques restreintes
 -- ============================================================
 
+DROP POLICY IF EXISTS "Public can view visible missions" ON public.missions;
+DROP POLICY IF EXISTS "Authenticated can view visible or own missions" ON public.missions;
+
 -- Anonymes : uniquement les missions visibles (modérées)
 CREATE POLICY "Public can view visible missions"
 ON public.missions FOR SELECT
@@ -146,6 +153,122 @@ USING (
     visible = true
     OR created_by = auth.uid()
     OR public.auth_is_super_admin()
+);
+
+-- ============================================================
+-- ÉTAPE 2c : STORAGE — Supprimer les politiques trop permissives
+-- ============================================================
+
+DROP POLICY IF EXISTS "Mission images are publicly accessible" ON storage.objects;
+DROP POLICY IF EXISTS "Authenticated users can upload mission images" ON storage.objects;
+DROP POLICY IF EXISTS "Mission creators can update their mission images" ON storage.objects;
+DROP POLICY IF EXISTS "Mission creators can delete their mission images" ON storage.objects;
+
+DROP POLICY IF EXISTS "Mission media are publicly accessible" ON storage.objects;
+DROP POLICY IF EXISTS "Authenticated users can upload mission media" ON storage.objects;
+DROP POLICY IF EXISTS "Users can update their mission media" ON storage.objects;
+DROP POLICY IF EXISTS "Users can delete their mission media" ON storage.objects;
+
+-- ============================================================
+-- ÉTAPE 2d : STORAGE — Politiques restreintes
+-- ============================================================
+
+CREATE POLICY "Mission images are publicly accessible"
+ON storage.objects FOR SELECT
+TO public
+USING (bucket_id = 'missions');
+
+CREATE POLICY "Authenticated users can upload mission images"
+ON storage.objects FOR INSERT
+TO authenticated
+WITH CHECK (
+    bucket_id = 'missions'
+    AND (storage.foldername(name))[1] = auth.uid()::text
+);
+
+CREATE POLICY "Mission creators can update their mission images"
+ON storage.objects FOR UPDATE
+TO authenticated
+USING (
+    bucket_id = 'missions'
+    AND (storage.foldername(name))[1] = auth.uid()::text
+)
+WITH CHECK (
+    bucket_id = 'missions'
+    AND (storage.foldername(name))[1] = auth.uid()::text
+);
+
+CREATE POLICY "Mission creators can delete their mission images"
+ON storage.objects FOR DELETE
+TO authenticated
+USING (
+    bucket_id = 'missions'
+    AND (storage.foldername(name))[1] = auth.uid()::text
+);
+
+CREATE POLICY "Mission media are publicly accessible"
+ON storage.objects FOR SELECT
+TO public
+USING (bucket_id = 'mission-media');
+
+CREATE POLICY "Authenticated users can upload mission media"
+ON storage.objects FOR INSERT
+TO authenticated
+WITH CHECK (
+    bucket_id = 'mission-media'
+    AND EXISTS (
+        SELECT 1
+        FROM public.missions
+        WHERE missions.id::text = (storage.foldername(name))[1]
+        AND (
+            missions.created_by = auth.uid()
+            OR public.auth_is_super_admin()
+        )
+    )
+);
+
+CREATE POLICY "Users can update their mission media"
+ON storage.objects FOR UPDATE
+TO authenticated
+USING (
+    bucket_id = 'mission-media'
+    AND EXISTS (
+        SELECT 1
+        FROM public.missions
+        WHERE missions.id::text = (storage.foldername(name))[1]
+        AND (
+            missions.created_by = auth.uid()
+            OR public.auth_is_super_admin()
+        )
+    )
+)
+WITH CHECK (
+    bucket_id = 'mission-media'
+    AND EXISTS (
+        SELECT 1
+        FROM public.missions
+        WHERE missions.id::text = (storage.foldername(name))[1]
+        AND (
+            missions.created_by = auth.uid()
+            OR public.auth_is_super_admin()
+        )
+    )
+);
+
+CREATE POLICY "Users can delete their mission media"
+ON storage.objects FOR DELETE
+TO authenticated
+USING (
+    bucket_id = 'mission-media'
+    AND EXISTS (
+        SELECT 1
+        FROM public.missions
+        WHERE missions.id::text = (storage.foldername(name))[1]
+        AND (
+            missions.created_by = auth.uid()
+            OR public.auth_is_super_admin()
+        )
+    )
 );
 
 -- ============================================================
@@ -193,6 +316,8 @@ DECLARE
     own_policy      BOOLEAN;
     anon_mission    BOOLEAN;
     auth_mission    BOOLEAN;
+    mission_img_policy BOOLEAN;
+    mission_media_policy BOOLEAN;
 BEGIN
     SELECT EXISTS(SELECT 1 FROM pg_proc
         WHERE proname = 'auth_is_super_admin'
@@ -216,6 +341,16 @@ BEGIN
         WHERE tablename = 'missions'
         AND policyname = 'Authenticated can view visible or own missions') INTO auth_mission;
 
+    SELECT EXISTS(SELECT 1 FROM pg_policies
+        WHERE schemaname = 'storage'
+        AND tablename = 'objects'
+        AND policyname = 'Authenticated users can upload mission images') INTO mission_img_policy;
+
+    SELECT EXISTS(SELECT 1 FROM pg_policies
+        WHERE schemaname = 'storage'
+        AND tablename = 'objects'
+        AND policyname = 'Authenticated users can upload mission media') INTO mission_media_policy;
+
     RAISE NOTICE '========================================';
     RAISE NOTICE 'SECURITY HARDENING — VÉRIFICATION';
     RAISE NOTICE '========================================';
@@ -225,9 +360,11 @@ BEGIN
     RAISE NOTICE 'Policy "Users can view own profile"     : %', CASE WHEN own_policy    THEN '✅ OK' ELSE '❌ MANQUANT' END;
     RAISE NOTICE 'Policy missions anon (visible=true)     : %', CASE WHEN anon_mission  THEN '✅ OK' ELSE '❌ MANQUANT' END;
     RAISE NOTICE 'Policy missions auth (visible+own+admin): %', CASE WHEN auth_mission  THEN '✅ OK' ELSE '❌ MANQUANT' END;
+    RAISE NOTICE 'Storage mission images owner-scoped     : %', CASE WHEN mission_img_policy THEN '✅ OK' ELSE '❌ MANQUANT' END;
+    RAISE NOTICE 'Storage mission-media mission-scoped    : %', CASE WHEN mission_media_policy THEN '✅ OK' ELSE '❌ MANQUANT' END;
     RAISE NOTICE '========================================';
 
-    IF fn_exists AND trigger_exists AND view_exists AND own_policy AND anon_mission AND auth_mission THEN
+    IF fn_exists AND trigger_exists AND view_exists AND own_policy AND anon_mission AND auth_mission AND mission_img_policy AND mission_media_policy THEN
         RAISE NOTICE '✅ SECURITY HARDENING APPLIQUÉ AVEC SUCCÈS';
     ELSE
         RAISE NOTICE '⚠️ Des éléments sont manquants — vérifiez les erreurs ci-dessus';

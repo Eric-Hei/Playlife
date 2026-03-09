@@ -515,20 +515,34 @@ ON storage.objects FOR SELECT
 TO public
 USING (bucket_id = 'missions');
 
+-- Les couvertures de mission doivent être stockées sous <user_id>/nom-de-fichier
 CREATE POLICY "Authenticated users can upload mission images"
 ON storage.objects FOR INSERT
 TO authenticated
-WITH CHECK (bucket_id = 'missions');
+WITH CHECK (
+    bucket_id = 'missions'
+    AND (storage.foldername(name))[1] = auth.uid()::text
+);
 
 CREATE POLICY "Mission creators can update their mission images"
 ON storage.objects FOR UPDATE
 TO authenticated
-USING (bucket_id = 'missions');
+USING (
+    bucket_id = 'missions'
+    AND (storage.foldername(name))[1] = auth.uid()::text
+)
+WITH CHECK (
+    bucket_id = 'missions'
+    AND (storage.foldername(name))[1] = auth.uid()::text
+);
 
 CREATE POLICY "Mission creators can delete their mission images"
 ON storage.objects FOR DELETE
 TO authenticated
-USING (bucket_id = 'missions');
+USING (
+    bucket_id = 'missions'
+    AND (storage.foldername(name))[1] = auth.uid()::text
+);
 
 -- ============================================
 -- ÉTAPE 12 : POLITIQUES STORAGE - MISSION-MEDIA
@@ -539,20 +553,66 @@ ON storage.objects FOR SELECT
 TO public
 USING (bucket_id = 'mission-media');
 
+-- Les médias doivent être stockés sous <mission_id>/nom-de-fichier
 CREATE POLICY "Authenticated users can upload mission media"
 ON storage.objects FOR INSERT
 TO authenticated
-WITH CHECK (bucket_id = 'mission-media');
+WITH CHECK (
+    bucket_id = 'mission-media'
+    AND EXISTS (
+        SELECT 1
+        FROM public.missions
+        WHERE missions.id::text = (storage.foldername(name))[1]
+        AND (
+            missions.created_by = auth.uid()
+            OR public.auth_is_super_admin()
+        )
+    )
+);
 
 CREATE POLICY "Users can update their mission media"
 ON storage.objects FOR UPDATE
 TO authenticated
-USING (bucket_id = 'mission-media');
+USING (
+    bucket_id = 'mission-media'
+    AND EXISTS (
+        SELECT 1
+        FROM public.missions
+        WHERE missions.id::text = (storage.foldername(name))[1]
+        AND (
+            missions.created_by = auth.uid()
+            OR public.auth_is_super_admin()
+        )
+    )
+)
+WITH CHECK (
+    bucket_id = 'mission-media'
+    AND EXISTS (
+        SELECT 1
+        FROM public.missions
+        WHERE missions.id::text = (storage.foldername(name))[1]
+        AND (
+            missions.created_by = auth.uid()
+            OR public.auth_is_super_admin()
+        )
+    )
+);
 
 CREATE POLICY "Users can delete their mission media"
 ON storage.objects FOR DELETE
 TO authenticated
-USING (bucket_id = 'mission-media');
+USING (
+    bucket_id = 'mission-media'
+    AND EXISTS (
+        SELECT 1
+        FROM public.missions
+        WHERE missions.id::text = (storage.foldername(name))[1]
+        AND (
+            missions.created_by = auth.uid()
+            OR public.auth_is_super_admin()
+        )
+    )
+);
 
 -- ============================================
 -- ÉTAPE 13 : POLITIQUES STORAGE - SLIDESHOW
