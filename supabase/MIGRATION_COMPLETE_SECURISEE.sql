@@ -220,8 +220,12 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 BEGIN
+    -- Bloquer toute modification de is_super_admin par un non-super-admin
+    -- Exception : les rôles postgres et service_role peuvent toujours modifier ce champ
+    --             (administration directe via SQL Editor ou service_role key)
     IF NEW.is_super_admin IS DISTINCT FROM OLD.is_super_admin THEN
-        IF NOT public.auth_is_super_admin() THEN
+        IF current_role NOT IN ('postgres', 'service_role')
+           AND NOT public.auth_is_super_admin() THEN
             RAISE EXCEPTION 'Permission refusée : modification de is_super_admin non autorisée.';
         END IF;
     END IF;
